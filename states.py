@@ -9,11 +9,6 @@ class States(Enum):
 
     ide = 6
 
-    rel_greater = 7
-    rel_greater_equal = 8
-    rel_less = 9
-    rel_less_equal = 10
-    rel_equal = 11
-    rel_comparison = 12
-    rel_exclamation = 13
-    rel_different = 14
+    rel = 7
+    rel_equal = 8
+    exclamation = 9

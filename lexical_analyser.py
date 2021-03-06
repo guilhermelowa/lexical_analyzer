@@ -33,42 +33,33 @@ def next_state(state, char, buffer):
             return States.num 
         elif isletter(char):
             return States.ide
-        elif char == '>':
-            return States.rel_greater
-        elif char == '<':
-            return States.rel_less
-        elif char == '=':
-            return States.rel_equal
+        elif char == '>' or char == '<' or char == '=':
+            return States.rel
         elif char == '!':
-            return States.rel_exclamation
+            return States.exclamation
+
     elif state == States.num:
-        if char.isdigit():
+        if isdigit(char):
             return States.num
         elif char == '.':
             return States.num_dot
     elif state == States.num_dot:
-        if char.isdigit():
+        if isdigit(char):
             return States.num_after_dot
     elif state == States.num_after_dot:
-        if char.isdigit():
+        if isdigit(char):
             return States.num_after_dot
 
     elif state == States.ide:
         if isletter(char) or isdigit(char) or char == '_':
             return States.ide
 
-    if state == States.rel_greater:
+    elif state == States.rel:
         if char == '=':
-            return States.rel_greater_equal
-    if state == States.rel_less:
+            return States.rel_equal
+    elif state == States.exclamation:
         if char == '=':
-            return States.rel_less_equal
-    if state == States.rel_equal:
-        if char == '=':
-            return States.rel_comparison
-    if state == States.rel_exclamation:
-        if char == '=':
-            return States.rel_different
+            return States.rel_equal
 
     return States.invalid_state #TODO Save buffer logic
 
