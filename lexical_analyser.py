@@ -1,6 +1,6 @@
 import re
 from tokens import *
-
+from states import *
 
 def isdigit(x):
     return re.match(r'\d', x, re.ASCII) is not None
@@ -26,8 +26,36 @@ def save_token(line_num, buffer, previous_state):
     token_type = identify_token(previous_state)
     tokens.append([line_num, buffer, token_type])  # append output
 
+#TODO Move next state
+def next_state(state, char, buffer):
+    if state == States.START:
+        if isdigit(char):
+            return States.NUM_START
+        elif isletter(char):
+            return States.IDE_START
+    if state == States.NUM_START:
+        if isdigit(char):
+            return States.NUM_FINAL_1
+    elif state == States.NUM_FINAL_1:
+        if isdigit(char):
+            return States.NUM_FINAL_1
+        elif char == '.':
+            return States.NUM_DOT
+    elif state == States.NUM_DOT:
+        if isdigit(char):
+            return States.NUM_FINAL_2
+
+    elif state == States.IDE_START:
+        if isletter(char):
+            return States.IDE_FINAL
+    elif state == States.IDE_FINAL:
+        if isletter(char) or isdigit(char) or char == '_':
+            return States.IDE_FINAL
+
+    return States.INVALID_STATE #TODO Save buffer logic
+
 tokens = []
-state = 0  # TODO: create enum
+state = States.START
 
 with open('entrada1.txt') as f:
     for line_num, line in enumerate(f.readline())
