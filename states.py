@@ -1,10 +1,19 @@
 from enum import Enum
 class States(Enum):
-    INVALID_STATE = -1
-    START = 0
-    NUM_START = 1
-    NUM_FINAL_1 = 2
-    NUM_DOT = 3
-    NUM_FINAL_2 = 4
-    IDE_START = 5
-    IDE_FINAL = 6
+    invalid_state = -1
+    start = 0
+
+    num = 2
+    num_dot = 3
+    num_after_dot = 4
+
+    ide = 6
+
+    rel_greater = 7
+    rel_greater_equal = 8
+    rel_less = 9
+    rel_less_equal = 10
+    rel_equal = 11
+    rel_comparison = 12
+    rel_exclamation = 13
+    rel_different = 14

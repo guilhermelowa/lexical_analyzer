@@ -28,31 +28,49 @@ def save_token(line_num, buffer, previous_state):
 
 #TODO Move next state
 def next_state(state, char, buffer):
-    if state == States.START:
+    if state == States.start:
         if isdigit(char):
-            return States.NUM_START
+            return States.num 
         elif isletter(char):
-            return States.IDE_START
-    if state == States.NUM_START:
-        if isdigit(char):
-            return States.NUM_FINAL_1
-    elif state == States.NUM_FINAL_1:
-        if isdigit(char):
-            return States.NUM_FINAL_1
+            return States.ide
+        elif char == '>':
+            return States.rel_greater
+        elif char == '<':
+            return States.rel_less
+        elif char == '=':
+            return States.rel_equal
+        elif char == '!':
+            return States.rel_exclamation
+    elif state == States.num:
+        if char.isdigit():
+            return States.num
         elif char == '.':
-            return States.NUM_DOT
-    elif state == States.NUM_DOT:
-        if isdigit(char):
-            return States.NUM_FINAL_2
+            return States.num_dot
+    elif state == States.num_dot:
+        if char.isdigit():
+            return States.num_after_dot
+    elif state == States.num_after_dot:
+        if char.isdigit():
+            return States.num_after_dot
 
-    elif state == States.IDE_START:
-        if isletter(char):
-            return States.IDE_FINAL
-    elif state == States.IDE_FINAL:
+    elif state == States.ide:
         if isletter(char) or isdigit(char) or char == '_':
-            return States.IDE_FINAL
+            return States.ide
 
-    return States.INVALID_STATE #TODO Save buffer logic
+    if state == States.rel_greater:
+        if char == '=':
+            return States.rel_greater_equal
+    if state == States.rel_less:
+        if char == '=':
+            return States.rel_less_equal
+    if state == States.rel_equal:
+        if char == '=':
+            return States.rel_comparison
+    if state == States.rel_exclamation:
+        if char == '=':
+            return States.rel_different
+
+    return States.invalid_state #TODO Save buffer logic
 
 tokens = []
 state = States.START
@@ -64,4 +82,3 @@ with open('entrada1.txt') as f:
             if save_buffer:
                 save_token(line_num, buffer, previous_state)
             previous_state = state
-            
