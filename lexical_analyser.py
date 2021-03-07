@@ -80,6 +80,28 @@ def next_state(state, char):
     elif state == States.art_minus:
         if char == '-':
             return States.art_complete
+
+    elif state == States.slash:
+        if char == '/':
+            return States.com_line
+        elif char == '*':
+            return States.com_block
+
+    elif state == States.com_line:
+        if char == '\n':
+            return States.com_line_complete
+        return States.com_line
+    elif state == States.com_block:
+        if char == '*':
+            return States.com_block_after_asterisk
+        return States.com_block
+    elif state == States.com_block_after_asterisk:
+        if char == '*':
+            return States.com_block_after_asterisk
+        elif char == '/':
+            return States.com_block_complete
+        return States.com_block_complete
+
     return States.invalid_state
 
 tokens = []
@@ -87,7 +109,7 @@ previous_state = States.start
 buffer = ''
 
 #TODO organize final_states
-final_states = [States.num, States.num_after_dot, States.rel_equal, States.rel, States.exclamation, States.ide, States.log_complete, States.art_complete, States.art_plus, States.art_minus, States.slash, States.delimiter]
+final_states = [States.num, States.num_after_dot, States.rel_equal, States.rel, States.exclamation, States.ide, States.log_complete, States.art_complete, States.art_plus, States.art_minus, States.slash, States.delimiter, States.com_block_complete, States.com_line_complete]
 
 with open('input/entrada1.txt') as f:
     for line_num, line in enumerate(f.readline()):

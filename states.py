@@ -24,3 +24,8 @@ class States(Enum):
 
     delimiter = 16
 
+    com_line = 17
+    com_line_complete = 18
+    com_block = 19
+    com_block_after_asterisk = 20
+    com_block_complete = 21
