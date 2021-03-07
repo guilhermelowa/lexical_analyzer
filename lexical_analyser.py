@@ -84,7 +84,7 @@ def next_state(state, char):
 
 tokens = []
 previous_state = States.start
-buffer = ''\
+buffer = ''
 
 #TODO organize final_states
 final_states = [States.num, States.num_after_dot, States.rel_equal, States.rel, States.exclamation, States.ide, States.log_complete, States.art_complete, States.art_plus, States.art_minus, States.slash, States.delimiter]
