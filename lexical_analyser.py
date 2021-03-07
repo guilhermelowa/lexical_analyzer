@@ -5,26 +5,23 @@ from states import *
 def isdigit(x):
     return re.match(r'\d', x, re.ASCII) is not None
 
-def isletter(x):
-    return re.match(r'([a-z] || [A-Z])', x) is not None
-
 def issymbol(x):
     return (ord(x) > 31) and (ord(x) < 127)
 
 def isdelimiter(x):
-    return x is in delimiters
+    return x in delimiters
 
-def identify_token(previous_state):
-    if previous_state in final_states:
-        # get which token recognizer it is
-    else:  # else invalid
-        return "ERR"
+# def identify_token(previous_state):
+#     if previous_state in final_states:
+#         # get which token recognizer it is
+#     else:  # else invalid
+#         return "ERR"
 
-def save_token(line_num, buffer, previous_state):
-    global tokens
+# def save_token(line_num, buffer, previous_state):
+#     global tokens
 
-    token_type = identify_token(previous_state)
-    tokens.append([line_num, buffer, token_type])  # append output
+#     token_type = identify_token(previous_state)
+#     tokens.append([line_num, buffer, token_type])  # append output
 
 #TODO Move next state
 def next_state(state, char):
@@ -50,7 +47,6 @@ def next_state(state, char):
         elif char == '/':
             return States.slash
 
-
     elif state == States.num:
         if isdigit(char):
             return States.num
@@ -64,7 +60,7 @@ def next_state(state, char):
             return States.num_after_dot
 
     elif state == States.ide:
-        if isletter(char) or isdigit(char) or char == '_':
+        if char.isalpha() or isdigit(char) or char == '_':
             return States.ide
 
     elif state == States.rel:
@@ -85,14 +81,20 @@ def next_state(state, char):
     elif state == States.art_minus:
         if char == '-':
             return States.art_complete
+    return States.invalid_state
 
 tokens = []
-state = States.START
+previous_state = States.start
+buffer = ''\
 
-with open('entrada1.txt') as f:
-    for line_num, line in enumerate(f.readline())
+#TODO organize final_states
+final_states = [States.num, States.num_after_dot, States.rel_equal, States.rel, States.exclamation, States.ide, States.log_complete, States.art_complete, States.art_plus, States.art_minus, States.slash, States.delimiter]
+
+with open('input/entrada1.txt') as f:
+    for line_num, line in enumerate(f.readline()):
         for char in line:
-            state, save_buffer = next_state(state, char)
-            if save_buffer:
-                save_token(line_num, buffer, previous_state)
+            state = next_state(previous_state, char)
+            #if condition:
+                #TODO Save token logic
             previous_state = state
+            buffer += char
