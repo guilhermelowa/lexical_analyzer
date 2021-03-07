@@ -69,7 +69,6 @@ def next_state(state, char):
     elif state == States.exclamation:
         if char == '=':
             return States.rel_equal
-        return States.log_complete
 
     elif state == States.log_incomplete:
         if char == '&' or char == '|':
