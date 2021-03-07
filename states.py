@@ -11,4 +11,16 @@ class States(Enum):
 
     rel = 7
     rel_equal = 8
+
     exclamation = 9
+
+    log_incomplete = 10
+    log_complete = 11
+
+    art_plus = 12
+    art_minus = 13
+    art_complete = 14
+    slash = 15
+
+    delimiter = 16
+
