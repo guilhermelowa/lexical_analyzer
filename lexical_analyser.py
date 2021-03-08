@@ -22,24 +22,21 @@ def get_token_type(state):
     else:
         return "ERR"
 
-def save_token(state, char=None):
+def save_token(state):
     global tokens
     global buffer
     global line_num
 
     line_num = str(line_num)
     token_type = get_token_type(state)
-    token = "".join(buffer)
-    tokens.append(f"{line_num} {token_type} {token}")
+    tokens.append(f"{line_num} {token_type} {buffer}")
 
-    if char is None:
-        buffer = []
-    else:
-        buffer = [char]
+    buffer = ""
 
 def next_state(state, char):
     global buffer 
 
+    # Initial state
     if state == States.start:
         if isdigit(char):
             return States.num_final
@@ -62,40 +59,36 @@ def next_state(state, char):
         else if char == '/':
             return States.slash
 
+    # Numbers
     else if state == States.num_final:
         if isdigit(char):
-            add_char(buffer, char)
             return States.num_final
         else if char == '.':
-            add_char(buffer, char)
             return States.num_dot
-        else if char == ' ':
-            save_token(state)
-            return States.start
         else:
-            save_token(state, char)
+            save_token(state)
             return States.start
         
     else if state == States.num_dot:
         if isdigit(char):
-            add_char(buffer, char)
             return States.num_after_dot_final
         else:
-            add_char(buffer, char):
             save_token(States.invalid_state)
             return States.start
+
     else if state == States.num_after_dot_final:
         if isdigit(char):
-            add_char(buffer, char)
             return States.num_after_dot_final
         else:
             save_token(state, char)
             return States.start
 
+    # Identifiers
     else if state == States.identifier_final:
         if char.isalpha() or isdigit(char) or char == '_':
             return States.identifier_final
-
+        
+    # Relational operators
     else if state == States.rel:
         if char == '=':
             return States.rel_equal
@@ -103,10 +96,12 @@ def next_state(state, char):
         if char == '=':
             return States.rel_equal
 
+    # Logic operators
     else if state == States.log_incomplete:
         if char == '&' or char == '|':
             return States.log_complete
 
+    # Arithmetic operators
     else if state == States.art_plus:
         if char == '+':
             return States.art_complete
@@ -114,6 +109,7 @@ def next_state(state, char):
         if char == '-':
             return States.art_complete
 
+    # Comentaries
     else if state == States.slash:
         if char == '/':
             return States.com_line
@@ -138,7 +134,7 @@ def next_state(state, char):
     return States.invalid_state
 
 tokens = []
-previous_state = States.start
+state = States.start
 buffer = ''
 
 #TODO organize final_states
@@ -147,8 +143,6 @@ final_states = [States.num_final, States.num_after_dot_final, States.rel_equal, 
 with open('input/entrada1.txt') as f:
     for line_num, line in enumerate(f.readline()):
         for char in line:
-            state = next_state(previous_state, char)
-            #if condition:
-                #TODO Save token logic
-            previous_state = state
-            buffer += char
+            state = next_state(state, char)
+            if char != ' ':
+                buffer += char
