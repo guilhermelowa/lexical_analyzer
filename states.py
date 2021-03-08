@@ -3,14 +3,14 @@ class States(Enum):
     invalid_state = -1
     start = 0
 
-    num = 2
+    num_final = 2
     num_dot = 3
-    num_after_dot = 4
+    num_after_dot_final = 4
 
-    ide = 6
+    identifier_final = 6
 
-    rel = 7
-    rel_equal = 8
+    relational_final = 7
+    relational_equal_final = 8
 
     exclamation = 9
 

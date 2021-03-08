@@ -27,9 +27,9 @@ def isdelimiter(x):
 def next_state(state, char):
     if state == States.start:
         if isdigit(char):
-            return States.num 
+            return States.num_final 
         elif char.isalpha():
-            return States.ide
+            return States.identifier_final
         elif char in delimiters:
             return States.delimiter
         elif char == '>' or char == '<' or char == '=':
@@ -47,21 +47,21 @@ def next_state(state, char):
         elif char == '/':
             return States.slash
 
-    elif state == States.num:
+    elif state == States.num_final:
         if isdigit(char):
-            return States.num
+            return States.num_final
         elif char == '.':
             return States.num_dot
     elif state == States.num_dot:
         if isdigit(char):
-            return States.num_after_dot
-    elif state == States.num_after_dot:
+            return States.num_after_dot_final
+    elif state == States.num_after_dot_final:
         if isdigit(char):
-            return States.num_after_dot
+            return States.num_after_dot_final
 
-    elif state == States.ide:
+    elif state == States.identifier_final:
         if char.isalpha() or isdigit(char) or char == '_':
-            return States.ide
+            return States.identifier_final
 
     elif state == States.rel:
         if char == '=':
@@ -109,7 +109,7 @@ previous_state = States.start
 buffer = ''
 
 #TODO organize final_states
-final_states = [States.num, States.num_after_dot, States.rel_equal, States.rel, States.exclamation, States.ide, States.log_complete, States.art_complete, States.art_plus, States.art_minus, States.slash, States.delimiter, States.com_block_complete, States.com_line_complete]
+final_states = [States.num_final, States.num_after_dot_final, States.rel_equal, States.rel, States.exclamation, States.identifier_final, States.log_complete, States.art_complete, States.art_plus, States.art_minus, States.slash, States.delimiter, States.com_block_complete, States.com_line_complete]
 
 with open('input/entrada1.txt') as f:
     for line_num, line in enumerate(f.readline()):
