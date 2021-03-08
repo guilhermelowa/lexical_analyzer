@@ -11,94 +11,127 @@ def issymbol(x):
 def isdelimiter(x):
     return x in delimiters
 
-# def identify_token(previous_state):
-#     if previous_state in final_states:
-#         # get which token recognizer it is
-#     else:  # else invalid
-#         return "ERR"
+def add_char(buffer, char):
+    buffer.append(char)
 
-# def save_token(line_num, buffer, previous_state):
-#     global tokens
+def get_token_type(state):
+    if state == States.num_final or state == States.num_after_dot_final:
+        return "NRO"
+    else if state == States.identifier_final:
+        return "IDE"
+    else:
+        return "ERR"
 
-#     token_type = identify_token(previous_state)
-#     tokens.append([line_num, buffer, token_type])  # append output
+def save_token(state, char=None):
+    global tokens
+    global buffer
+    global line_num
 
-#TODO Move next state
+    line_num = str(line_num)
+    token_type = get_token_type(state)
+    token = "".join(buffer)
+    tokens.append(f"{line_num} {token_type} {token}")
+
+    if char is None:
+        buffer = []
+    else:
+        buffer = [char]
+
 def next_state(state, char):
+    global buffer 
+
     if state == States.start:
         if isdigit(char):
-            return States.num_final 
-        elif char.isalpha():
+            return States.num_final
+        else if char.isalpha():
             return States.identifier_final
-        elif char in delimiters:
+        else if char in delimiters:
             return States.delimiter
-        elif char == '>' or char == '<' or char == '=':
+        else if char == '>' or char == '<' or char == '=':
             return States.rel
-        elif char == '!':
+        else if char == '!':
             return States.exclamation
-        elif char == '&' or char == '|':
+        else if char == '&' or char == '|':
             return States.log_incomplete
-        elif char == '+':
+        else if char == '+':
             return States.art_plus
-        elif char == '-':
+        else if char == '-':
             return States.art_minus
-        elif char == '*':
+        else if char == '*':
             return States.art_complete
-        elif char == '/':
+        else if char == '/':
             return States.slash
 
-    elif state == States.num_final:
+    else if state == States.num_final:
         if isdigit(char):
+            add_char(buffer, char)
             return States.num_final
-        elif char == '.':
+        else if char == '.':
+            add_char(buffer, char)
             return States.num_dot
-    elif state == States.num_dot:
+        else if char == ' ':
+            save_token(state)
+            return States.start
+        else:
+            save_token(state, char)
+            return States.start
+        
+    else if state == States.num_dot:
         if isdigit(char):
+            add_char(buffer, char)
             return States.num_after_dot_final
-    elif state == States.num_after_dot_final:
+        else:
+            add_char(buffer, char):
+            save_token(States.invalid_state)
+            return States.start
+    else if state == States.num_after_dot_final:
         if isdigit(char):
+            add_char(buffer, char)
             return States.num_after_dot_final
+        else:
+            save_token(state, char)
+            return States.start
 
-    elif state == States.identifier_final:
+    else if state == States.identifier_final:
         if char.isalpha() or isdigit(char) or char == '_':
             return States.identifier_final
 
-    elif state == States.rel:
+    else if state == States.rel:
         if char == '=':
             return States.rel_equal
-    elif state == States.exclamation:
+    else if state == States.exclamation:
         if char == '=':
             return States.rel_equal
 
-    elif state == States.log_incomplete:
+    else if state == States.log_incomplete:
         if char == '&' or char == '|':
             return States.log_complete
 
-    elif state == States.art_plus:
+    else if state == States.art_plus:
         if char == '+':
             return States.art_complete
-    elif state == States.art_minus:
+    else if state == States.art_minus:
         if char == '-':
             return States.art_complete
 
-    elif state == States.slash:
+    else if state == States.slash:
         if char == '/':
             return States.com_line
-        elif char == '*':
+        else if char == '*':
             return States.com_block
 
-    elif state == States.com_line:
+    else if state == States.com_line:
         if char == '\n':
             return States.com_line_complete
         return States.com_line
-    elif state == States.com_block:
+    else if state == States.com_block:
         if char == '*':
             return States.com_block_after_asterisk
         return States.com_block
-    elif state == States.com_block_after_asterisk:
+    else if state == States.com_block_after_asterisk:
         if char == '*':
             return States.com_block_after_asterisk
-        elif char == '/':
+        else if char == '/':
             return States.com_block_complete
         return States.com_block_complete
 
