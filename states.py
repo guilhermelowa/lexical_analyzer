@@ -29,3 +29,11 @@ class States(Enum):
     com_block = 19
     com_block_after_asterisk = 20
     com_block_complete = 21
+
+    space = 100
+    new_line = 101
+
+    string = 22 
+    string_escape = 23
+    string_escape_quote = 24
+    string_final = 25

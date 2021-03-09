@@ -17,7 +17,7 @@ def add_char(buffer, char):
 def get_token_type(state):
     if state == States.num_final or state == States.num_after_dot_final:
         return "NRO"
-    else if state == States.identifier_final:
+    elif state == States.identifier_final:
         return "IDE"
     else:
         return "ERR"
