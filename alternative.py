@@ -120,9 +120,6 @@ def get_next_state(state, char):
 
     return States.invalid_state 
 
-
-accepting_states = [States.num_final, States.num_after_dot_final, States.relational_equal_final, States.relational_final, States.exclamation, States.identifier_final, States.log_complete, States.art_complete, States.art_plus, States.art_minus, States.slash, States.delimiter, States.com_line_complete, States.com_block_complete, States.string_final, States.space, States.new_line]
-
 #TODO Organize dictionary and create default
 token_state_dictionary = {
     States.num_final: "NRO",
