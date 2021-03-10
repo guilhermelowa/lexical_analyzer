@@ -146,15 +146,11 @@ token_state_dictionary = {
     States.log_incomplete: "OpMF"
 }
 
-FILE = open('input/entrada1.txt', 'r')
-file_string = FILE.read()
-current_position = 0
-line = 1
-tokens = []
-
 def next_token(input_string):
     global current_position
     global line
+    global tokens
+
     value_buffer = ''
     current_state = States.start
     for char in input_string:
@@ -170,9 +166,18 @@ def next_token(input_string):
         current_position += 1
         line += 1
     else:
-        print(f"{token_state_dictionary[current_state]} {value_buffer} {line}")
+        tokens.append(f"{line} {token_state_dictionary[current_state]} {value_buffer}\n")
         current_position += len(value_buffer)
 
+with open('tests/entrada1.txt', 'r') as fin:
+    file_string = fin.read()
+    current_position = 0
+    line = 1
+    tokens = []
 
-while(current_position < len(file_string)):
-    next_token(file_string[current_position:])
+    while(current_position < len(file_string)):
+        next_token(file_string[current_position:])
+
+with open('tests/saida1.txt', 'w') as fout:
+    for token in tokens:
+        fout.write(token)

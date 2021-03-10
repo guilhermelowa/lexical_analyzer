@@ -67,7 +67,7 @@ def next_state(state, char):
             return States.num_dot
         else:
             save_token(state)
-            return States.start
+            return next_state(States.start, char)
         
     else if state == States.num_dot:
         if isdigit(char):
@@ -81,7 +81,7 @@ def next_state(state, char):
             return States.num_after_dot_final
         else:
             save_token(state, char)
-            return States.start
+            return next_state(States.start, char)
 
     # Identifiers
     else if state == States.identifier_final:
