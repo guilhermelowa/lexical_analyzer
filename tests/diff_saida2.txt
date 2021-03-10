@@ -1,0 +1,94 @@
+1,2d0
+< 1 NRO 1
+< 1 IDE IDE
+4,5d1
+< 2 NRO 2
+< 2 IDE IDE
+7,8c3,4
+< 3 NRO 2
+< 3 IDE IDE
+---
+> 2 IDE linha
+> 3 IDE terceira
+10,60c6,21
+< 4 NRO 3
+< 4 IDE IDE
+< 4 IDE terceira
+< 5 NRO 3
+< 5 IDE IDE
+< 5 IDE linha
+< 6 NRO 4
+< 6 IDE NRO
+< 6 NRO 123
+< 7 NRO 5
+< 7 IDE IDE
+< 7 IDE a
+< 8 NRO 5
+< 8 IDE REL
+< 8 REL =
+< 9 NRO 5
+< 9 IDE NRO
+< 9 NRO 4.56
+< 10 NRO 6
+< 10 IDE IDE
+< 10 IDE b
+< 11 NRO 6
+< 11 IDE ART
+< 11 ART +
+< 12 NRO 6
+< 12 IDE IDE
+< 12 IDE c
+< 13 NRO 6
+< 13 IDE REL
+< 13 REL ==
+< 14 NRO 6
+< 14 IDE NRO
+< 14 NRO 28
+< 15 NRO 6
+< 15 IDE DEL
+< 15 DEL ;
+< 16 NRO 7
+< 16 IDE IDE
+< 16 IDE d
+< 17 NRO 7
+< 17 IDE ART
+< 17 ART ++
+< 18 NRO 8
+< 18 IDE IDE
+< 18 IDE eta
+< 19 NRO 8
+< 19 IDE REL
+< 19 REL !=
+< 20 NRO 8
+< 20 IDE NRO
+< 20 NRO 92
+---
+> 4 NRO 123
+> 5 IDE a
+> 5 REL =
+> 5 NRO 4.56
+> 6 IDE b
+> 6 ART +
+> 6 IDE c
+> 6 REL ==
+> 6 NRO 28
+> 6 DEL ;
+> 7 IDE d
+> 7 ART ++
+> 8 IDE eta
+> 8 REL !=
+> 8 NRO 92
+> 
+21,30c21
+< 9 ART /
+< 9 IDE comentario
+< 9 IDE de
+< 9 IDE linha
+< 10 ART *
+< 10 IDE abc
+< 11 IDE def
+< 12 IDE ghi
+< 12 ART *
+< 12 ART /
+---
+> 

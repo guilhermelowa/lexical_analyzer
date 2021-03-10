@@ -159,12 +159,14 @@ def next_token(input_string):
             break
         current_state = next_state
         value_buffer += char
-    #TODO Treat comments (just skip position and lines)
     if current_state == States.space:
         current_position += 1
     elif current_state == States.new_line:
         current_position += 1
         line += 1
+    elif current_state == States.com_line_complete or \
+         current_state == States.com_block_complete:
+         #TODO Treat comments (just skip position and lines)
     else:
         tokens.append(f"{line} {token_state_dictionary[current_state]} {value_buffer}\n")
         current_position += len(value_buffer)
@@ -175,15 +177,15 @@ for filename in os.listdir(directory):
         file_num = filename.split('.')[0][7:]
         print(file_num)
 
-    with open(f'{directory}{filename}', 'r') as fin:
-        file_string = fin.read()
-        current_position = 0
-        line = 1
-        tokens = []
+        with open(f'{directory}{filename}', 'r') as fin:
+            file_string = fin.read()
+            current_position = 0
+            line = 1
+            tokens = []
 
-        while(current_position < len(file_string)):
-            next_token(file_string[current_position:])
+            while(current_position < len(file_string)):
+                next_token(file_string[current_position:])
 
-    with open(f'{directory}saida{file_num}.txt', 'w') as fout:
-        for token in tokens:
-            fout.write(token)
+        with open(f'{directory}saida{file_num}.txt', 'w') as fout:
+            for token in tokens:
+                fout.write(token)
