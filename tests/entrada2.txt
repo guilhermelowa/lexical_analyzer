@@ -1,0 +1,13 @@
+uaehfouahefou
+segunda linha
+terceira linha
+123
+a=4.56
+b+c==28;
+d++
+eta!=92
+// comentario de linha
+/* abc
+def
+ghi */
+

@@ -1,5 +1,5 @@
+import os
 import re
-
 from states import *
 from tokens import *
 
@@ -169,15 +169,21 @@ def next_token(input_string):
         tokens.append(f"{line} {token_state_dictionary[current_state]} {value_buffer}\n")
         current_position += len(value_buffer)
 
-with open('tests/entrada1.txt', 'r') as fin:
-    file_string = fin.read()
-    current_position = 0
-    line = 1
-    tokens = []
+directory = 'tests/'
+for filename in os.listdir(directory):
+    if filename.startswith('entrada'):
+        file_num = filename.split('.')[0][7:]
+        print(file_num)
 
-    while(current_position < len(file_string)):
-        next_token(file_string[current_position:])
+    with open(f'{directory}{filename}', 'r') as fin:
+        file_string = fin.read()
+        current_position = 0
+        line = 1
+        tokens = []
 
-with open('tests/saida1.txt', 'w') as fout:
-    for token in tokens:
-        fout.write(token)
+        while(current_position < len(file_string)):
+            next_token(file_string[current_position:])
+
+    with open(f'{directory}saida{file_num}.txt', 'w') as fout:
+        for token in tokens:
+            fout.write(token)
