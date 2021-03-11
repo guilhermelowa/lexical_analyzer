@@ -3,6 +3,9 @@ import re
 from states import *
 from tokens import *
 
+current_position = 0
+line = 1
+tokens = [] #TODO Put these in correct python global variables patterns
 
 def isdigit(x):
     return re.match(r'\d', x, re.ASCII) is not None
@@ -12,6 +15,7 @@ def issymbol(x):
 
 
 def get_next_state(state, char):
+    global line
     if state == States.start:
         if char == ' ':
             return States.space
@@ -82,11 +86,14 @@ def get_next_state(state, char):
 
     elif state == States.com_line:
         if char == '\n':
+            line += 1
             return States.com_line_complete
         return States.com_line
     elif state == States.com_block:
         if char == '*':
             return States.com_block_after_asterisk
+        elif char == '\n':
+            line += 1
         return States.com_block
     elif state == States.com_block_after_asterisk:
         if char == '*':
@@ -150,7 +157,6 @@ def next_token(input_string):
     global current_position
     global line
     global tokens
-
     value_buffer = ''
     current_state = States.start
     for char in input_string:
@@ -164,11 +170,13 @@ def next_token(input_string):
     elif current_state == States.new_line:
         current_position += 1
         line += 1
-    elif current_state == States.com_line_complete or \
-         current_state == States.com_block_complete:
-         #TODO Treat comments (just skip position and lines)
     else:
-        tokens.append(f"{line} {token_state_dictionary[current_state]} {value_buffer}\n")
+        if current_state == States.identifier_final and value_buffer in reserved_words:
+            tokens.append(f"{line} PRE {value_buffer}\n")
+            print(f"{line} PRE {value_buffer}\n")
+        elif current_state in token_state_dictionary.keys():
+            tokens.append(f"{line} {token_state_dictionary[current_state]} {value_buffer}\n")
+            print(f"{line} {token_state_dictionary[current_state]} {value_buffer}\n")
         current_position += len(value_buffer)
 
 directory = 'tests/'

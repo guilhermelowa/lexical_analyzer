@@ -18,13 +18,4 @@
 8 IDE eta
 8 REL !=
 8 NRO 92
-9 ART /
-9 IDE comentario
-9 IDE de
-9 IDE linha
-10 ART *
-10 IDE abc
-11 IDE def
-12 IDE ghi
-12 ART *
-12 ART /
+13 NRO 2
