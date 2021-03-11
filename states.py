@@ -37,3 +37,5 @@ class States(Enum):
     string_escape = 23
     string_escape_quote = 24
     string_final = 25
+
+    invalid_symbol = 26

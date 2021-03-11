@@ -43,6 +43,8 @@ def get_next_state(state, char):
             return States.slash
         elif char == "\"":
             return States.string
+        else:
+            return States.invalid_symbol
 
     elif state == States.num_final:
         if isdigit(char):
@@ -150,7 +152,8 @@ token_state_dictionary = {
     States.com_block: "CoMF",
     States.com_block_after_asterisk: "CoMF",
     States.com_line: "CoMF",
-    States.log_incomplete: "OpMF"
+    States.log_incomplete: "OpMF",
+    States.invalid_symbol: "SIB"
 }
 
 def next_token(input_string):

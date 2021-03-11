@@ -1,11 +1,19 @@
-1 IDE teste
+1 IDE caminh
+1 SIB ✪
 1 REL =
 1 NRO 5
+1 SIB ✪
 1 ART +
 1 NRO 4
 2 IDE se
 2 LOG &&
-2 CAD "esta e uma cadeia de caracteres"
+2 CMF "esta e 
+2 SIB ✪
+2 IDE uma
+2 IDE cadeia
+2 IDE de
+2 IDE caracteres
+2 CMF "
 3 NMF 3.
 3 DEL .
 3 NRO 14
