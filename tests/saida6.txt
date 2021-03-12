@@ -1,0 +1,252 @@
+4 PRE global
+4 PRE const
+4 PRE real
+4 IDE PI
+4 REL =
+4 NMF 3.
+4 DEL .
+4 NRO 1415
+4 DEL ;
+7 PRE typedef
+7 PRE struct
+7 DEL {
+8 SIB 	
+8 PRE local
+8 PRE var
+8 PRE real
+8 IDE radius
+8 DEL ;
+9 SIB 	
+9 PRE local
+9 PRE var
+9 PRE real
+9 IDE area
+9 DEL ;
+10 SIB 	
+10 PRE local
+10 PRE var
+10 PRE real
+10 IDE length
+10 DEL ;
+11 DEL }
+11 IDE circle
+11 DEL ;
+14 PRE real
+14 PRE function
+14 IDE area
+14 DEL (
+14 PRE real
+14 IDE radius
+14 DEL )
+14 DEL {
+15 SIB 	
+15 PRE local
+15 PRE var
+15 PRE real
+15 IDE result
+15 REL =
+15 IDE PI
+15 ART *
+15 IDE radius
+15 ART *
+15 IDE radius
+15 DEL ;
+16 SIB 	
+16 PRE return
+16 IDE result
+16 DEL ;
+17 DEL }
+20 PRE real
+20 PRE function
+20 IDE length
+20 DEL (
+20 PRE real
+20 IDE radius
+20 DEL )
+20 DEL {
+21 SIB 	
+21 PRE local
+21 PRE var
+21 PRE real
+21 IDE result
+21 REL =
+21 NRO 2
+21 ART *
+21 IDE PI
+21 ART *
+21 IDE radius
+21 DEL ;
+22 SIB 	
+22 PRE return
+22 IDE result
+22 DEL ;
+23 DEL }
+26 PRE procedure
+26 IDE show
+26 DEL (
+26 IDE circle
+26 IDE c
+26 DEL )
+26 DEL {
+27 SIB 	
+27 PRE print
+27 DEL (
+27 CAD "Radius: "
+27 DEL )
+27 DEL ;
+27 SIB @
+28 SIB 	
+28 PRE print
+28 DEL (
+28 IDE c
+28 DEL .
+28 IDE radius
+28 DEL )
+28 DEL ;
+29 SIB 	
+29 PRE print
+29 DEL (
+29 CAD "\n"
+29 DEL )
+29 DEL ;
+31 SIB 	
+31 PRE print
+31 DEL (
+31 CAD "Area: "
+31 DEL )
+31 DEL ;
+32 SIB 	
+32 PRE print
+32 DEL (
+32 IDE c
+32 DEL .
+32 IDE area
+32 DEL )
+32 DEL ;
+33 SIB 	
+33 PRE print
+33 DEL (
+33 CAD "\n"
+33 DEL )
+33 DEL ;
+35 SIB 	
+35 PRE print
+35 DEL (
+35 CAD "Length: "
+35 DEL )
+35 DEL ;
+36 SIB 	
+36 PRE print
+36 DEL (
+36 IDE c
+36 DEL .
+36 IDE length
+36 DEL )
+36 DEL ;
+37 SIB 	
+37 PRE print
+37 DEL (
+37 CAD "\n"
+37 DEL )
+37 DEL ;
+38 DEL }
+41 PRE local
+41 PRE var
+41 IDE circle
+41 DEL ;
+43 PRE local
+43 PRE var
+43 PRE real
+43 IDE radius
+43 REL =
+43 NRO 0
+43 DEL ;
+44 PRE local
+44 PRE string
+44 IDE exit
+44 REL =
+44 CAD "n"
+47 PRE while
+47 DEL (
+47 IDE exit
+47 REL !=
+47 CAD "y"
+47 DEL )
+47 DEL {
+49 SIB 	
+49 IDE radius
+49 REL =
+49 DEL (
+49 PRE real
+49 DEL )
+49 PRE read
+49 DEL (
+49 CAD "Insira o valor do raio: "
+49 DEL )
+49 DEL ;
+51 SIB 	
+51 PRE if
+51 DEL (
+51 IDE radius
+51 REL >
+51 NRO 0
+51 DEL )
+51 PRE then
+51 DEL {
+52 SIB 	
+52 SIB 	
+52 IDE circle
+52 DEL .
+52 IDE radius
+52 REL =
+52 IDE radius
+52 DEL ;
+53 SIB 	
+53 SIB 	
+53 IDE circle
+53 DEL .
+53 IDE area
+53 REL =
+53 IDE area
+53 DEL (
+53 IDE radius
+53 DEL )
+53 DEL ;
+54 SIB 	
+54 SIB 	
+54 IDE circle
+54 DEL .
+54 IDE length
+54 REL =
+54 IDE length
+54 DEL (
+54 IDE radius
+54 DEL )
+54 DEL ;
+56 SIB 	
+56 SIB 	
+56 IDE show
+56 DEL (
+56 IDE circle
+56 DEL )
+56 DEL ;
+57 SIB 	
+57 DEL }
+57 PRE else
+57 DEL {
+58 SIB 	
+58 SIB 	
+58 PRE print
+58 DEL (
+58 CAD "O Raio deve ser maior que zero\n"
+58 DEL )
+58 DEL ;
+59 SIB 	
+59 DEL }
+61 SIB 	
+61 IDE exit
+61 REL =
+61 PRE read
+61 DEL (
+61 CMF "Sair[y]: );
+62 DEL }

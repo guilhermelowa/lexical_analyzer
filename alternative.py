@@ -26,7 +26,7 @@ def get_next_state(state, char):
         elif char == "\n":
             return States.new_line
         elif isdigit(char):
-            return States.num_final 
+            return States.num_final
         elif isletter(char):
             return States.identifier_final
         elif char in delimiters:
@@ -106,7 +106,7 @@ def get_next_state(state, char):
             return States.com_block_after_asterisk
         elif char == '/':
             return States.com_block_complete
-        return States.com_block_complete
+        return States.com_block
 
     #String 
     elif state == States.string:
