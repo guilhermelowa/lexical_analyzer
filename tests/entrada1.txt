@@ -1,5 +1,12 @@
-caminh✪= 5✪ + 4
-se && "esta e ✪ uma cadeia de caracteres"
+é
+✪"esta e✪ uma cadeia de caracteres"
+caminh= 5 + 4
+se && 
+/* 
+este
+esta
+estae
+/*
 3..14
 se a > b { } ++ == -- + -
 tudo nosso = (sempre.com)

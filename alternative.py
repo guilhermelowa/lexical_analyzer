@@ -10,8 +10,12 @@ tokens = [] #TODO Put these in correct python global variables patterns
 def isdigit(x):
     return re.match(r'\d', x, re.ASCII) is not None
 
+def isletter(x):
+     return re.match(r'([A-Za-z])', x) is not None
+
 def issymbol(x):
     return (ord(x) > 31) and (ord(x) < 127) and not (ord(x) == 34)
+
 
 
 def get_next_state(state, char):
@@ -23,7 +27,7 @@ def get_next_state(state, char):
             return States.new_line
         elif isdigit(char):
             return States.num_final 
-        elif char.isalpha():
+        elif isletter(char):
             return States.identifier_final
         elif char in delimiters:
             return States.delimiter
@@ -59,7 +63,7 @@ def get_next_state(state, char):
             return States.num_after_dot_final
 
     elif state == States.identifier_final:
-        if char.isalpha() or isdigit(char) or char == '_':
+        if isletter(char) or isdigit(char) or char == '_':
             return States.identifier_final
 
     elif state == States.relational_final:
@@ -108,7 +112,7 @@ def get_next_state(state, char):
     elif state == States.string:
         if char == '\\':
             return States.string_escape
-        if char.isalpha() or char.isdigit() or issymbol(char):
+        if isletter(char) or char.isdigit() or issymbol(char):
             return States.string
         elif char == "\"":
             return States.string_final
@@ -117,14 +121,14 @@ def get_next_state(state, char):
             return States.string_escape_quote
         elif char == "\\":
             return States.string_escape
-        elif char.isalpha() or char.isdigit() or issymbol(char):
+        elif isletter(char) or char.isdigit() or issymbol(char):
             return States.string
     elif state == States.string_escape_quote:
         if char == "\"":
             return States.string_final
         elif char == "\\":
             return States.string_escape
-        elif char.isalpha() or char.isdigit() or issymbol(char):
+        elif isletter(char) or char.isdigit() or issymbol(char):
             return States.string
 
     return States.invalid_state 
@@ -176,10 +180,8 @@ def next_token(input_string):
     else:
         if current_state == States.identifier_final and value_buffer in reserved_words:
             tokens.append(f"{line} PRE {value_buffer}\n")
-            print(f"{line} PRE {value_buffer}\n")
         elif current_state in token_state_dictionary.keys():
             tokens.append(f"{line} {token_state_dictionary[current_state]} {value_buffer}\n")
-            print(f"{line} {token_state_dictionary[current_state]} {value_buffer}\n")
         current_position += len(value_buffer)
 
 directory = 'tests/'
