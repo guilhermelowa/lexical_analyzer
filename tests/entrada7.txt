@@ -1,0 +1,4 @@
+"esta é uma cadeia mal formada, não pode acento"
+"1 cadeia _ bem form@d4 !@#$%*()_+-./\"\aef"
+&
+|

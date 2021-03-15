@@ -216,13 +216,12 @@ for filename in os.listdir(input_dir):
             tokens = []
             errors = 0
 
-            print(f"Reading file {filename}")
             while(current_position < len(file_string)):
                 next_token(file_string[current_position:])
         if errors == 0:
             print(f"File {filename} read without errors")
         else:
-            print(f"Found {errors} in {filename}")
+            print(f"Found {errors} errors in {filename}")
         files_read += 1
 
         with open(f'{output_dir}saida{file_num}.txt', 'w') as fout:
