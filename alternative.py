@@ -3,9 +3,6 @@ import re
 from states import *
 from tokens import *
 
-current_position = 0
-line = 1
-tokens = [] #TODO Put these in correct python global variables patterns
 
 def isdigit(x):
     return re.match(r'\d', x, re.ASCII) is not None
@@ -16,10 +13,10 @@ def isletter(x):
 def issymbol(x):
     return (ord(x) > 31) and (ord(x) < 127) and not (ord(x) == 34)
 
-
-
 def get_next_state(state, char):
     global line
+
+    # Start
     if state == States.start:
         if char == ' ':
             return States.space
@@ -50,6 +47,7 @@ def get_next_state(state, char):
         else:
             return States.invalid_symbol
 
+    # Numbers
     elif state == States.num_final:
         if isdigit(char):
             return States.num_final
@@ -62,10 +60,12 @@ def get_next_state(state, char):
         if isdigit(char):
             return States.num_after_dot_final
 
+    # Identifier
     elif state == States.identifier_final:
         if isletter(char) or isdigit(char) or char == '_':
             return States.identifier_final
 
+    # Relational
     elif state == States.relational_final:
         if char == '=':
             return States.relational_equal_final
@@ -73,10 +73,12 @@ def get_next_state(state, char):
         if char == '=':
             return States.relational_equal_final
 
+    # Logic operators
     elif state == States.log_incomplete:
         if char == '&' or char == '|':
             return States.log_complete
 
+    # Arithimetic operators
     elif state == States.art_plus:
         if char == '+':
             return States.art_complete
@@ -84,6 +86,7 @@ def get_next_state(state, char):
         if char == '-':
             return States.art_complete
 
+    # Comentaries
     elif  state == States.slash:
         if char == '/':
             return States.com_line
@@ -184,11 +187,17 @@ def next_token(input_string):
             tokens.append(f"{line} {token_state_dictionary[current_state]} {value_buffer}\n")
         current_position += len(value_buffer)
 
+current_position = 0
+line = 1
+tokens = [] #TODO Put these in correct python global variables patterns
+
 directory = 'tests/'
+files_read = 0
+files_written = 0
+
 for filename in os.listdir(directory):
     if filename.startswith('entrada'):
         file_num = filename.split('.')[0][7:]
-        print(file_num)
 
         with open(f'{directory}{filename}', 'r') as fin:
             file_string = fin.read()
@@ -198,7 +207,13 @@ for filename in os.listdir(directory):
 
             while(current_position < len(file_string)):
                 next_token(file_string[current_position:])
+        files_read += 1
 
         with open(f'{directory}saida{file_num}.txt', 'w') as fout:
             for token in tokens:
                 fout.write(token)
+        files_written += 1
+    
+
+print(f"Read {files_read} files\
+ \nWrote {files_written} files")
