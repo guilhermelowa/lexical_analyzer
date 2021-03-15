@@ -163,12 +163,22 @@ token_state_dictionary = {
     States.invalid_symbol: "SIB"
 }
 
+error_states = [
+    "NMF",
+    "CMF",
+    "CoMF",
+    "OpMF",
+    "SIB"
+]
+
 def next_token(input_string):
     global current_position
     global line
     global tokens
+    global errors
     value_buffer = ''
     current_state = States.start
+    
     for char in input_string:
         next_state = get_next_state(current_state, char)
         if next_state == States.invalid_state:
@@ -184,36 +194,41 @@ def next_token(input_string):
         if current_state == States.identifier_final and value_buffer in reserved_words:
             tokens.append(f"{line} PRE {value_buffer}\n")
         elif current_state in token_state_dictionary.keys():
-            tokens.append(f"{line} {token_state_dictionary[current_state]} {value_buffer}\n")
+            token_type = token_state_dictionary[current_state]
+            tokens.append(f"{line} {token_type} {value_buffer}\n")
+            if token_type in error_states:
+                errors += 1
         current_position += len(value_buffer)
 
-current_position = 0
-line = 1
-tokens = [] #TODO Put these in correct python global variables patterns
-
-directory = 'tests/'
+input_dir = 'tests/'
+output_dir = 'tests/'
 files_read = 0
 files_written = 0
 
-for filename in os.listdir(directory):
+for filename in os.listdir(input_dir):
     if filename.startswith('entrada'):
         file_num = filename.split('.')[0][7:]
 
-        with open(f'{directory}{filename}', 'r') as fin:
+        with open(f'{input_dir}{filename}', 'r') as fin:
             file_string = fin.read()
-            current_position = 0
+            current_position = 0 #TODO Put these in correct python global variables patterns
             line = 1
             tokens = []
+            errors = 0
 
+            print(f"Reading file {filename}")
             while(current_position < len(file_string)):
                 next_token(file_string[current_position:])
+        if errors == 0:
+            print(f"File {filename} read without errors")
+        else:
+            print(f"Found {errors} in {filename}")
         files_read += 1
 
-        with open(f'{directory}saida{file_num}.txt', 'w') as fout:
+        with open(f'{output_dir}saida{file_num}.txt', 'w') as fout:
             for token in tokens:
                 fout.write(token)
         files_written += 1
-    
 
 print(f"Read {files_read} files\
  \nWrote {files_written} files")
