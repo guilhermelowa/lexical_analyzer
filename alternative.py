@@ -117,8 +117,10 @@ def get_next_state(state, char):
             return States.string_escape
         if isletter(char) or char.isdigit() or issymbol(char):
             return States.string
-        elif char == "\"":
+        if char == "\"":
             return States.string_final
+        else:
+            return States.string_error
     elif state == States.string_escape:
         if char == "\"":
             return States.string_escape_quote
@@ -126,6 +128,8 @@ def get_next_state(state, char):
             return States.string_escape
         elif isletter(char) or char.isdigit() or issymbol(char):
             return States.string
+        else:
+            return States.string_error
     elif state == States.string_escape_quote:
         if char == "\"":
             return States.string_final
@@ -133,6 +137,13 @@ def get_next_state(state, char):
             return States.string_escape
         elif isletter(char) or char.isdigit() or issymbol(char):
             return States.string
+        else:
+            return States.string_error
+    elif state == States.string_error:
+        if char == "\"":
+            return States.string_error_final
+        else:
+            return States.string_error
 
     return States.invalid_state 
 
@@ -156,6 +167,8 @@ token_state_dictionary = {
     States.string: "CMF",
     States.string_escape: "CMF",
     States.string_escape_quote: "CMF",
+    States.string_error: "CMF",
+    States.string_error_final: "CMF",
     States.com_block: "CoMF",
     States.com_block_after_asterisk: "CoMF",
     States.com_line: "CoMF",

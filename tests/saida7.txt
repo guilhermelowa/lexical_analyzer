@@ -1,16 +1,4 @@
-1 CMF "esta 
-1 SIB é
-1 IDE uma
-1 IDE cadeia
-1 IDE mal
-1 IDE formada
-1 DEL ,
-1 IDE n
-1 SIB ã
-1 IDE o
-1 IDE pode
-1 IDE acento
-1 CMF "
+1 CMF "esta é uma cadeia mal formada, não pode acento"
 2 CAD "1 cadeia _ bem form@d4 !@#$%*()_+-./\"\aef"
 3 OpMF &
 4 OpMF |
