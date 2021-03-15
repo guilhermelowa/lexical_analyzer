@@ -53,8 +53,7 @@
 24 PRE if
 24 DEL (
 24 IDE value2
-24 REL >
-24 REL =
+24 REL >=
 24 IDE value1
 24 DEL )
 24 DEL {
