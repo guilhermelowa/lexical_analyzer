@@ -224,8 +224,8 @@ def next_token(input_string):
                 errors += 1
         current_position += len(value_buffer)
 
-input_dir = 'tests/'
-output_dir = 'tests/'
+input_dir = 'input/'
+output_dir = 'output/'
 files_read = 0
 files_written = 0
 
