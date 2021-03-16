@@ -119,6 +119,8 @@ def get_next_state(state, char):
             return States.string
         if char == "\"":
             return States.string_final
+        if char == "\n" or char == os.linesep:
+            return States.invalid_state
         else:
             return States.string_error
     elif state == States.string_escape:
@@ -140,7 +142,7 @@ def get_next_state(state, char):
         else:
             return States.string_error
     elif state == States.string_error:
-        if char == "\"":
+        if char == "\"" or char == os.linesep or char == "\n":
             return States.string_error_final
         else:
             return States.string_error
