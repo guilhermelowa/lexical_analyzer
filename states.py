@@ -14,7 +14,8 @@ class States(Enum):
 
     exclamation = 9
 
-    log_incomplete = 10
+    log_and = 10
+    log_or = 29
     log_complete = 11
 
     art_plus = 12

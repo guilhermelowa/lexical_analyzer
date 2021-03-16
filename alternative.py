@@ -32,8 +32,10 @@ def get_next_state(state, char):
             return States.relational_final
         elif char == '!':
             return States.exclamation
-        elif char == '&' or char == '|':
-            return States.log_incomplete
+        elif char == '&':
+            return States.log_and
+        elif char == '|':
+            return States.log_or
         elif char == '+':
             return States.art_plus
         elif char == '-':
@@ -74,8 +76,11 @@ def get_next_state(state, char):
             return States.relational_equal_final
 
     # Logic operators
-    elif state == States.log_incomplete:
-        if char == '&' or char == '|':
+    elif state == States.log_and:
+        if char == '&':
+            return States.log_complete
+    elif state == States.log_or:
+        if char == '|':
             return States.log_complete
 
     # Arithimetic operators
@@ -174,7 +179,8 @@ token_state_dictionary = {
     States.com_block: "CoMF",
     States.com_block_after_asterisk: "CoMF",
     States.com_line: "CoMF",
-    States.log_incomplete: "OpMF",
+    States.log_and: "OpMF",
+    States.log_or: "OpMF",
     States.invalid_symbol: "SIB"
 }
 
