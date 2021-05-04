@@ -103,6 +103,7 @@ def get_next_state(state, char):
             line += 1
             return States.com_line_complete
         return States.com_line
+
     elif state == States.com_block:
         if char == '*':
             return States.com_block_after_asterisk
@@ -114,6 +115,8 @@ def get_next_state(state, char):
             return States.com_block_after_asterisk
         elif char == '/':
             return States.com_block_complete
+        elif char == '\n':
+            line += 1
         return States.com_block
 
     #String 
@@ -221,8 +224,8 @@ def next_token(input_string):
                 errors += 1
         current_position += len(value_buffer)
 
-input_dir = 'tests/'
-output_dir = 'tests/'
+input_dir = 'input/'
+output_dir = 'output/'
 files_read = 0
 files_written = 0
 

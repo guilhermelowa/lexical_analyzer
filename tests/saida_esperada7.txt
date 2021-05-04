@@ -1,7 +1,0 @@
-1 CMF "esta é uma cadeia mal formada, não pode acento"
-2 CAD "1 cadeia _ bem form@d4 !@#$%*()_+-./\"\aef"
-3 LOG &&
-3 LOG ||
-3 LOG !
-4 OpMF &
-4 OpMF |
