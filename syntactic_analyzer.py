@@ -502,4 +502,532 @@ def array_decl():
         raise_error()
 
 def array_vector():
+    if token == ",":
+        next_token()
+        array_decl()
+
+def array_def():
+    if token in first_Expr:
+        expr()
+        array_expr()
+    else:
+        raise_error()
+
+def array_expr():
+    if token == ",":
+        next_token()
+        array_def()
+
+def array():
+    if token == "[":
+        next_token()
+        index()
+        if token == "]":
+            next_token()
+        else:
+            raise_error()
+    else:
+        raise_error()
+
+def index():
+    if token in first_Expr:
+        expr()
+
+def arrays():
+    if token in first_Array:
+        array()
+        arrays()
+
+def assign():
+    if token == "=":
+        next_token()
+        expr()
+        if token == ";":
+            next_token()
+        else:
+            raise_error()
+    if token == "++":
+        next_token()
+        if token == ";":
+            next_token()
+        else:
+            raise_error()
+    if token == "--":
+        next_token()
+        if token == ";":
+            next_token()
+        else:
+            raise_error()
+    else:
+        raise_error()
+
+def access():
+    if token == ".":
+        next_token()
+        if token == "id":
+            next_token()
+            arrays()
+        else:
+            raise_error
+    else:
+        raise_error
     
+def accesses():
+    if token in first_Access:
+        access()
+        accesses()
+
+def args():
+    if token in first_Expr:
+        expr()
+        args_list()
+
+def args_list():
+    if token == ",":
+        next_token()
+        expr()
+        args_list()
+
+def func_decl():
+    if token == "function":
+        next_token()
+        param_type()
+        if token == "id":
+            next_token()
+            if token == "(":
+                next_token()
+                params()
+                if token == ")":
+                    next_token()
+                    func_block()
+                else:
+                    raise_error()
+            else:
+                raise_error()
+        else:
+            raise_error()
+    else:
+        raise_error()
+
+def proc_decl():
+    if token == "procedure":
+        next_token()
+        if token == "id":
+            next_token()
+            if token == "(":
+                next_token()
+                params()
+                if token == ")":
+                    next_token()
+                    func_block()
+                else:
+                    raise_error()
+            else:
+                raise_error()
+        else:
+            raise_error()
+    else:
+        raise_error()
+
+def param_type():
+    if token in first_Type:
+        type_func()
+    if token == "id":
+        next_token()
+    else:
+        raise_error()
+
+def params():
+    if token in first_Param:
+        param()
+        params_list()
+
+def param():
+    if token in first_ParamType:
+        param_type()
+        if token == "id":
+            next_token()
+            param_arrays()
+        else:
+            raise_error()
+    else:
+        raise_error()
+
+def params_list():
+    if token == ",":
+        next_token()
+        param()
+        params_list()
+
+def param_arrays():
+    if token == "[":
+        next_token()
+        if token == "]":
+            next_token()
+            param_mult_arrays()
+        else:
+            raise_error()
+
+def param_mult_arrays():
+    if token == "[":
+        next_token()
+        if token == "num":
+            next_token()
+            if token == "]":
+                next_token()
+                param_mult_arrays()
+            else:
+                raise_error()
+        else:
+                raise_error()
+
+def func_block():
+    if token == "{":
+        next_token()
+        var_block()
+        func_stms()
+        if token == "}":
+            next_token()
+        else:
+            raise_error()
+    else:
+        raise_error()
+
+def func_stms():
+    if token in first_FuncStm:
+        func_stm()
+        func_stms()
+
+def func_stm():
+    if token == "if":
+        next_token()
+        if token == "(":
+            next_token()
+            log_expr()
+            if token == ")":
+                next_token()
+                if token == "then":
+                    next_token()
+                    func_stm()
+                    else_stm()
+                    func_stm()
+                else:
+                    raise_error()
+            else:
+                raise_error()
+        else:
+                raise_error()
+    if token == "while":
+        next_token()
+        if token == "(":
+            next_token()
+            log_expr()
+            if token == ")":
+                next_token()
+                func_stm()
+    if token in first_FuncNormalStm:
+        func_normal_stm()
+    else:
+        raise_error()
+
+def else_stm():
+    if token == "else":
+        next_token()
+
+def func_normal_stm():
+    if token == "{":
+        next_token()
+        func_stms()
+        if token == "}":
+            next_token()
+        else:
+            raise_error()
+    if token in first_VarStm:
+        var_stm()
+    if token == ";":
+        next_token()
+    if token == "return":
+        next_token()
+        expr()
+        if token == ";":
+            next_token()
+        else:
+            raise_error()
+    else:
+        raise_error()
+
+def var_stm():
+    if token in first_StmScope:
+        stm_scope()
+    if token == "id":
+        next_token()
+        stm_id()
+    if token in first_StmCmd:
+        stm_cmd()
+    else:
+        raise_error()
+
+def stm_id():
+    if token in first_Assign:
+        assign()
+    if token in first_Array:
+        array()
+        arrays()
+        accesses()
+        assign()
+    if token in first_Access:
+        access()
+        accesses()
+        assign()
+    if token == "(":
+        next_token()
+        args()
+        if token == ")":
+            next_token()
+            if token == ";":
+                next_token()
+            else:
+                raise_error()
+        else:
+            raise_error()
+    else:
+        raise_error()
+
+def stm_scope():
+    if token == "local" or token == "global":
+        next_token()
+        access()
+        accesses()
+        assign()
+    else:
+        raise_error()
+
+def stm_cmd():
+    if token == "print" or token == "read":
+        next_token()
+        if token == "(":
+            next_token()
+            args()
+            if token == ")":
+                next_token()
+                if token == ";":
+                    next_token()
+                else:
+                    raise_error()
+            else:
+                raise_error()
+        else:
+            raise_error()
+    else:
+        raise_error()
+
+def expr():
+    if token in first_Or:
+        or_func()
+    else:
+        raise_error()
+
+def or_func():
+    if token in first_And:
+        and_func()
+        or_()
+    else:
+        raise_error()
+
+def or_():
+    if token == "||":
+        next_token()
+        and_func()
+        or_()
+
+def and_func():
+    if token in first_Equate:
+        equate()
+        and_()
+    else:
+        raise_error()
+
+def and_():
+    if token == "&&":
+        next_token()
+        equate()
+        and_()
+
+def equate():
+    if token in first_Compare:
+        compare()
+        equate_()
+    else:
+        raise_error()
+
+def equate_():
+    if token == "==" or token == "!=":
+        next_token()
+        compare()
+        equate_()
+
+def compare():
+    if token in first_Add:
+        add()
+        compare_()
+    else:
+        raise_error()
+
+def compare_():
+    if token == "<" or token == ">" or token == "<=" or token == ">=":
+        add()
+        compare_()
+
+def add_func():
+    if token in first_Mult:
+        mult()
+        add_()
+    else:
+        raise_error()
+
+def add_():
+    if token == "+" or token == "-":
+        next_token()
+        mult()
+        add_()
+
+def mult():
+    if token in first_Unary:
+        unary()
+        mult_()
+    else:
+        raise_error()
+
+def mult_():
+    if token == "*" or token == "/":
+        next_token()
+        unary()
+        mult_()
+
+def unary():
+    if token == "!":
+        next_token()
+        unary()
+    if token in firtst_Value:
+        value()
+    else:
+        raise_error()
+
+def value():
+    if token == "num" or token == "str" or token == "true" or token == "false":
+        next_token()
+    if token == "local" or token == "global":
+        next_token()
+        access()
+    if token == "id":
+        next_token()
+        id_value()
+    if token == "(":
+        next_token()
+        expr()
+        if token == ")":
+            next_token()
+        else:
+            raise_error()
+    else:
+        raise_error()
+
+def id_value():
+    if token in first_Arrays:
+        arrays()
+        accesses()
+    if token == "(":
+        next_token()
+        args()
+        if token == ")":
+            next_token()
+        else:
+            raise_error()
+    else:
+        raise_error()
+
+def log_expr():
+    if token in first_LogOr:
+        log_or()
+    else:
+        raise_error()
+
+def log_or():
+    if token in first_LogAnd():
+        log_and()
+        log_or_()
+    else:
+        raise_error()
+
+def log_or_():
+    if token == "||":
+        next_token()
+        log_and()
+        log_or_()
+
+def log_and():
+    if token in first_LogEquate:
+        log_equate()
+        log_and_()
+    else:
+        raise_error()
+
+def log_and_():
+    if token == "&&":
+        next_token()
+        log_equate()
+        log_and_()
+
+def log_equate():
+    if token in first_LogCompare:
+        log_compare()
+        log_equate_()
+    else:
+        raise_error()
+
+def log_equate_():
+    if token == "==" or token == "!=":
+        next_token()
+        log_compare()
+        log_equate_()
+
+def log_compare():
+    if token in first_LogUnary:
+        log_unary()
+        log_compare_()
+    else:
+        raise_error()
+
+def log_compare_():
+    if token == "<" or token == ">" or token == "<=" or token ">=":
+        next_token()
+        log_unary()
+        log_compare_()
+
+def log_unary():
+    if token == "!":
+        next_token()
+        log_unary()
+    if token in first_LogValue:
+        log_value()
+    else:
+        raise_error()
+
+def log_value():
+    if token == "num" or token == "str" or token == "true" or token == "false":
+        next_token()
+    if token == "local" or token == "global":
+        next_token()
+        access()
+    if token == "id":
+        next_token()
+        id_value()
+    if token == "(":
+        next_token()
+        log_expr()
+        if token == ")":
+            next_token()
+        else:
+            raise_error()
+    else:
+        raise_error()
