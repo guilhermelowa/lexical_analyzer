@@ -225,7 +225,7 @@ def next_token(input_string):
         current_position += len(value_buffer)
 
 input_dir = 'input/'
-output_dir = 'output/'
+output_dir = 'lexical_output/'
 files_read = 0
 files_written = 0
 
@@ -233,7 +233,7 @@ for filename in os.listdir(input_dir):
     if filename.startswith('entrada'):
         file_num = filename.split('.')[0][7:]
 
-        with open(f'{input_dir}{filename}', 'r') as fin:
+        with open(f'{input_dir}{filename}', 'r', encoding='iso8859-1') as fin:
             file_string = fin.read()
             current_position = 0 #TODO Put these in correct python global variables patterns
             line = 1
