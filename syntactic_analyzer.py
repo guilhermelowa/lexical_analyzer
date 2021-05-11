@@ -1,3 +1,8 @@
+import os
+
+
+# First & Follow
+
 first_Program          = ['const', 'procedure', 'var', 'struct']
 follow_Program         = ['$']
 
@@ -232,13 +237,26 @@ follow_LogUnary      =  ['||', ')', '<=', '==', '<', '>=', '&&', '>', '!=']
 first_LogValue        = ['false', 'local', 'str', 'true', '(', 'id', 'num', 'global']
 follow_LogValue       = ['||', ')', '<=', '==', '<', '>=', '&&', '>', '!=']
 
-# read tokens
 
-def next_token(token_list):
-    return next(token_list)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - -  Production Functions - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+
+
+def next_token():
+    global tokens, token, tokens_position
+    tokens_position += 1
+    token = tokens[tokens_position]
 
 def raise_error():
     print('Achei um erro!')
+
+def success():
+    global fout
+    fout.write('Análise Sintática concluída com sucesso!')
 
 def program():
     if token in first_Structs:
@@ -247,18 +265,22 @@ def program():
         var_block()
         start_block()
         decls()
+        success()
     if token in first_ConstBlock:
         const_block()
         var_block()
         start_block()
         decls()
+        success()
     if token in first_VarBlock:
         var_block()
         start_block()
         decls()
+        success()
     if token in first_StartBlock:
         start_block()
         decls()
+        success()
     else:
         raise_error()
 
@@ -378,7 +400,7 @@ def typedef():
         raise_error()
 
 def var_decls():
-    if token in first_VarDecl():
+    if token in first_VarDecl:
         var_decl()
         var_decls()
 
@@ -999,7 +1021,7 @@ def log_compare():
         raise_error()
 
 def log_compare_():
-    if token == "<" or token == ">" or token == "<=" or token ">=":
+    if token == "<" or token == ">" or token == "<=" or token == ">=":
         next_token()
         log_unary()
         log_compare_()
@@ -1031,3 +1053,46 @@ def log_value():
             raise_error()
     else:
         raise_error()
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - Main  - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+input_dir = 'lexical_output/'
+output_dir = 'syntactic_output/'
+files_read = 0
+tokens = []
+tokens_position = 0
+token = ''
+
+def read_lexical_output(input_dir):
+    global tokens, token, tokens_position
+    tokens = []
+    tokens_position = 0
+    
+    with open(f'{input_dir}{filename}', 'r') as fin:
+        for line in fin.readlines():
+            token_info = line.split() 
+            # 0 = line_number
+            # 1 = token type
+            # 2 = token
+            if token_info[1] == "IDE":
+                tokens.append("id")
+            if token_info[1] == "SIB":
+                continue
+            else:
+                tokens.append(token_info[2])
+        token = tokens[tokens_position]
+
+for filename in os.listdir(input_dir):
+    read_lexical_output(input_dir)
+    file_num = filename.split('.')[0][5:]
+    with open(f'{output_dir}saida{file_num}.txt', 'w') as fout:
+        program()
+    files_read += 1
+
+print(f"Read {files_read} files\
+ \nWrote {files_read} files")

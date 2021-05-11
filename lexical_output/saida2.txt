@@ -1,0 +1,39 @@
+3 PRE var
+4 DEL {
+5 SIB 	
+5 PRE int
+5 IDE inteiro
+5 DEL ;
+6 SIB 	
+6 PRE int
+6 IDE a
+6 DEL ;
+7 SIB 	
+7 PRE real
+7 IDE numero_real
+7 DEL ;
+8 SIB 	
+8 PRE real
+8 IDE numero_real2
+8 DEL ;
+9 DEL }
+11 PRE start
+12 DEL {
+14 SIB 	
+14 IDE inteiro
+14 REL =
+14 NRO 1
+14 DEL ;
+15 IDE a
+15 REL =
+15 NRO 1.1
+15 DEL ;
+16 IDE numero_real
+16 REL =
+16 NRO 1.123456789
+16 DEL ;
+17 IDE numero_real2
+17 REL =
+17 NRO 123456789.1
+17 DEL ;
+18 DEL }
