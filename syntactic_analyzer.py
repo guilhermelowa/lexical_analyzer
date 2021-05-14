@@ -237,26 +237,64 @@ follow_LogUnary      =  ['||', ')', '<=', '==', '<', '>=', '&&', '>', '!=']
 first_LogValue        = ['false', 'local', 'str', 'true', '(', 'id', 'num', 'global']
 follow_LogValue       = ['||', ')', '<=', '==', '<', '>=', '&&', '>', '!=']
 
+sync_words = ["start", "procedure", "function", "if", "then", "while", "print", "read"]
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# - - - - - - - - - - - - - - -  Production Functions - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -  Program Flow Functions - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 def next_token():
     global tokens, token, tokens_position
     tokens_position += 1
-    token = tokens[tokens_position]
+    token = tokens[tokens_position][1]
 
-def raise_error():
-    print('Achei um erro!')
+def print_error_msg(expected_token):
+    global token, fout
+    msg = f'Erro linha {tokens[tokens_position][0]}\n\
+        Esperava {expected_token}, recebido {token}\n\n'
+    print(msg)
+    fout.write(msg)
+
+def recover_from_error(sync_list):
+    global tokens, tokens_position
+    i = tokens_position
+    while i < len(tokens):
+        i += 1
+        if tokens[i][1] in sync_list:
+            print(f'Ignorados {i - tokens_position} tokens\n')
+            tokens_position = i
+            break
+    if i == len(tokens):
+        print('Não foi possível recuperar deste erro até o final do arquivo\n')
+
+def raise_error(expected_token, sync_list=None):
+    global tokens, token, tokens_position, fout, errors_count
+    errors_count += 1
+    print_error_msg(expected_token)
+
+    if sync_list != None:
+        recover_from_error(sync_list)
 
 def success():
-    global fout
-    fout.write('Análise Sintática concluída com sucesso!')
+    global fout, errors_count
+    if errors_count == 0:
+        msg = 'Análise Sintática concluída com sucesso!\n'
+        print(msg)
+        fout.write(msg)
+    else:
+        msg = f'Análise Sintática concluída com {errors_count} erros\n'
+        print(msg)
+        fout.write(msg)
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -  Production Functions - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
 def program():
     if token in first_Structs:
@@ -289,24 +327,27 @@ def structs():
         struct_block()
         structs()
 
-def start_block():
+def start():
+    if token == "start":
+        next_token()
+        if token != "(":
+            raise_error("(")
+        next_token()
+        if token != ")":
+            raise_error(")")
+        next_token()
+        func_block()
+    else:
+        raise_error("start", follow_StartBlock)
+
+def start_block(skip=None):
+    if skip == "start":
+        start()
     if token == "procedure":
         next_token()
-        if token == "start":
-            next_token()
-            if token == "(":
-                next_token()
-                if token == ")":
-                    next_token()
-                    func_block()
-                else:
-                    raise_error()
-            else:
-                raise_error()
-        else:
-            raise_error()
+        start()
     else:
-        raise_error()
+        raise_error("procedure", follow_StartBlock)
 
 def decls():
     if token in first_Decl:
@@ -319,7 +360,7 @@ def decl():
     if token in first_ProcDecl:
         proc_decl()
     else:
-        raise_error()
+        raise_error("function", follow_Decl)
 
 def struct_block():
     if token == "struct":
@@ -327,20 +368,19 @@ def struct_block():
         if token == "id":
             next_token()
             extends()
-            if token == "{":
+            if token != "{":
+                raise_error("{")
+            next_token()
+            const_block()
+            var_block()
+            if token == "}":
                 next_token()
-                const_block()
-                var_block()
-                if token == "}":
-                    next_token()
-                else:
-                    raise_error()
             else:
-                raise_error()
+                raise_error("}", follow_StructBlock)
         else:
-            raise_error()
+            raise_error("IDENTIFICADOR", follow_StructBlock)
     else:
-        raise_error()
+        raise_error("struct", follow_StructBlock)
 
 def extends():
     if token == "extends":
@@ -1067,11 +1107,13 @@ files_read = 0
 tokens = []
 tokens_position = 0
 token = ''
+errors_count = 0
 
 def read_lexical_output(input_dir):
-    global tokens, token, tokens_position
+    global tokens, token, tokens_position, errors_count
     tokens = []
     tokens_position = 0
+    errors_count = 0
     
     with open(f'{input_dir}{filename}', 'r') as fin:
         for line in fin.readlines():
@@ -1080,12 +1122,12 @@ def read_lexical_output(input_dir):
             # 1 = token type
             # 2 = token
             if token_info[1] == "IDE":
-                tokens.append("id")
-            if token_info[1] == "SIB":
+                tokens.append((token_info[0], "id"))
+            if token_info[1] == "SIB": # check all 
                 continue
             else:
-                tokens.append(token_info[2])
-        token = tokens[tokens_position]
+                tokens.append((token_info[0], token_info[2]))
+        token = tokens[tokens_position][1]
 
 for filename in os.listdir(input_dir):
     read_lexical_output(input_dir)
