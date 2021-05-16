@@ -258,13 +258,14 @@ def print_error_msg(expected_token):
     fout.write(msg)
 
 def recover_from_error(sync_list):
-    global tokens, tokens_position
+    global tokens, token, tokens_position
     i = tokens_position
-    while i+1 < len(tokens):
+    while i < len(tokens):
         i += 1
         if tokens[i][1] in sync_list:
             print(f'Ignorados {i - tokens_position} tokens após erro\n') # TODO: remove?
             tokens_position = i
+            token = tokens[tokens_position][1]
             break
     if i == len(tokens):
         i = sync_function(sync_words, normal_flow=False)
@@ -276,7 +277,7 @@ def find_token_nearby(expected_token):
     # TODO: Add case if expected_token = first or follow list
     if token == expected_token:
         return True
-    for i in range(1, 3): # check neighboors
+    for i in range(1, 3): # check neighboors     >> ((-)
         if tokens[tokens_position+i][1] == expected_token:
             tokens_position += i
             token = tokens[tokens_position+i][1]
@@ -293,9 +294,10 @@ def raise_error(expected_token, sync_list=None):
     print_error_msg(expected_token)
 
     if expected_token in ["{", "}", "(", ")", "[", "]"]:
-        if find_token_nearby(expected_token):
-            return
-    if sync_list != None:
+        find_token_nearby(expected_token) 
+        return
+            
+    if sync_list is not None:
         recover_from_error(sync_list)
 
 def success():
@@ -591,6 +593,7 @@ def const_list():
         const()
         const_list()
     elif token == "=":
+        next_token()
         decl_atribute()
         if token == ";":
             next_token()
@@ -972,14 +975,14 @@ def equate_():
 
 def compare():
     if token in first_Add:
-        add()
+        add_func()
         compare_()
     else:
         raise_error(first_Compare, follow_Compare)
 
 def compare_():
     if token == "<" or token == ">" or token == "<=" or token == ">=":
-        add()
+        add_func()
         compare_()
 
 def add_func():
@@ -1012,7 +1015,7 @@ def unary():
     if token == "!":
         next_token()
         unary()
-    elif token in firtst_Value:
+    elif token in first_Value:
         value()
     else:
         raise_error(first_Unary, follow_Unary)
@@ -1057,7 +1060,7 @@ def log_expr():
         raise_error(first_LogExpr, follow_LogExpr)
 
 def log_or():
-    if token in first_LogAnd():
+    if token in first_LogAnd:
         log_and()
         log_or_()
     else:
@@ -1163,12 +1166,13 @@ def read_lexical_output(input_dir):
             # 0 = line_number
             # 1 = token type
             # 2 = token
-            if token_info[1] == "SIB": # check all 
+            error_codes = ["SIB", "CMF", "NMF", "CoMF", "OpMF"]
+            if token_info[1] in error_codes: # check all 
                 continue
             if token_info[1] == "IDE":
                 tokens.append((token_info[0], "id"))
-            elif token_info[1] == "NUM":
-                tokens.append((token_info[0]), "num")
+            elif token_info[1] == "NRO":
+                tokens.append((token_info[0], "num"))
             else:
                 tokens.append((token_info[0], token_info[2]))
         token = tokens[tokens_position][1]
