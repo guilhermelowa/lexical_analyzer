@@ -1,1 +1,4 @@
-Análise Sintática concluída com sucesso!
+Erro linha 11:
+        Esperava procedure, recebido start
+
+Análise Sintática concluída com 1 erros

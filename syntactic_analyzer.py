@@ -248,7 +248,10 @@ sync_words = ["start", "procedure", "function", "if", "then", "while", "print", 
 def next_token():
     global tokens, token, tokens_position
     tokens_position += 1
-    token = tokens[tokens_position][1]
+    if tokens_position < len(tokens):
+        token = tokens[tokens_position][1]
+    else:
+        token = "$"
 
 def print_error_msg(expected_token):
     global token, fout
@@ -259,14 +262,14 @@ def print_error_msg(expected_token):
 
 def recover_from_error(sync_list):
     global tokens, token, tokens_position
-    i = tokens_position
+    i = tokens_position + 1
     while i < len(tokens):
-        i += 1
         if tokens[i][1] in sync_list:
             print(f'Ignorados {i - tokens_position} tokens após erro\n') # TODO: remove?
             tokens_position = i
             token = tokens[tokens_position][1]
             break
+        i += 1
     if i == len(tokens):
         i = sync_function(sync_words, normal_flow=False)
     if i == len(tokens):
@@ -313,14 +316,14 @@ def success():
 
 def sync_function(sync_list, normal_flow=True):
     global tokens, tokens_position
-    i = tokens_position
+    i = tokens_position + 1
     while i < len(tokens):
-        i += 1
-        token = [tokens][i][1]
+        token = tokens[i][1]
         if token in sync_list:
             print(f'Ignorados {i - tokens_position} tokens após erro\n') # TODO: remove?
             tokens_position = i
             break
+        i += 1
     if not normal_flow:
         if token == 'start':
             start()
@@ -459,8 +462,6 @@ def const_block():
         if token != "}":
             raise_error("}")
         next_token()
-    else:
-        raise_error("const", follow_ConstBlock)
 
 def var_block():
     if token == "var":
@@ -773,13 +774,12 @@ def params_list():
         params_list()
 
 def param_arrays():
-    if token != "[":
-        raise_error("[", ["]"])
-    next_token()
-    if token != "]":
-        raise_error("]", first_ParamMultArrays)
-    next_token()
-    param_mult_arrays()
+    if token == "[":
+        next_token()
+        if token != "]":
+            raise_error("]", first_ParamMultArrays)
+        next_token()
+        param_mult_arrays()
 
 def param_mult_arrays():
     if token == "[":
@@ -982,6 +982,7 @@ def compare():
 
 def compare_():
     if token == "<" or token == ">" or token == "<=" or token == ">=":
+        next_token()
         add_func()
         compare_()
 
@@ -1040,10 +1041,7 @@ def value():
         raise_error(first_Value, follow_Value)
 
 def id_value():
-    if token in first_Arrays:
-        arrays()
-        accesses()
-    elif token == "(":
+    if token == "(":
         next_token()
         args()
         if token == ")":
@@ -1051,7 +1049,8 @@ def id_value():
         else:
             raise_error(")", follow_IdValue)
     else:
-        raise_error(first_IdValue, follow_IdValue)
+        arrays()
+        accesses()
 
 def log_expr():
     if token in first_LogOr:
@@ -1173,6 +1172,8 @@ def read_lexical_output(input_dir):
                 tokens.append((token_info[0], "id"))
             elif token_info[1] == "NRO":
                 tokens.append((token_info[0], "num"))
+            elif token_info[1] == "CAD":
+                tokens.append((token_info[0], "str"))
             else:
                 tokens.append((token_info[0], token_info[2]))
         token = tokens[tokens_position][1]
