@@ -494,9 +494,9 @@ def typedef():
                 raise_error(';')
             next_token()
         else:
-            raise_error("IDENTIFICADOR", follow_TypeDef)
+            raise_error("IDENTIFICADOR", follow_Typedef)
     else:
-        raise_error("typedef", follow_TypeDef)
+        raise_error("typedef", follow_Typedef)
 
 def var_decls():
     if token in first_VarDecl:
@@ -631,7 +631,7 @@ def array_def():
         expr()
         array_expr()
     else:
-        raise_error(first_ArrayDef, follow_ArrrayDef)
+        raise_error(first_ArrayDef, follow_ArrayDef)
 
 def array_expr():
     if token == ",":
