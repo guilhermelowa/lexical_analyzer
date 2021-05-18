@@ -1159,7 +1159,7 @@ def read_lexical_output(input_dir):
     tokens_position = 0
     errors_count = 0
     
-    with open(f'{input_dir}{filename}', 'r') as fin:
+    with open(f'{input_dir}{filename}', 'r', encoding='iso8859-1') as fin:
         for line in fin.readlines():
             token_info = line.split() 
             # 0 = line_number
