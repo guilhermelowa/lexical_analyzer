@@ -256,6 +256,10 @@ def is_type_correct(expected_type, value, value_general_type):
         elif "." not in value and expected_type == "int":
             return True
         return False
+    elif value_general_type == "str":
+        if expected_type == "string":
+            return True
+        return False
 
 
 
@@ -1051,7 +1055,7 @@ def value():
     global ide_temp, tokens, tokens_position
     if token == "num" or token == "str" or token == "true" or token == "false":
         if not is_type_correct(const_table[ide_temp]["type"], tokens[tokens_position][2], tokens[tokens_position][1]):
-            print("Erro semantico teste")
+            print("Erro semantico")
         const_table[ide_temp]["value"] = tokens[tokens_position][2]
         next_token()
     elif token == "local" or token == "global":
