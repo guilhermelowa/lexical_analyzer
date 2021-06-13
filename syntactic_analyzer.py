@@ -389,22 +389,18 @@ def program():
         structs()
         const_block()
         var_block()
-        start_block()
         decls()
         success()
     elif token in first_ConstBlock:
         const_block()
         var_block()
-        start_block()
         decls()
         success()
     elif token in first_VarBlock:
         var_block()
-        start_block()
         decls()
         success()
-    elif token in first_StartBlock:
-        start_block()
+    elif token in first_Decls:
         decls()
         success()
     else:
@@ -427,13 +423,6 @@ def start():
         func_block()
     else:
         raise_error("start", follow_StartBlock)
-
-def start_block():
-    if token == "procedure":
-        next_token()
-        start()
-    else:
-        raise_error("procedure", follow_StartBlock)
 
 def decls():
     if token in first_Decl:
@@ -768,6 +757,8 @@ def proc_decl():
                 raise_error(")", first_FuncBlock)
             next_token()
             func_block()
+        elif token == "start":
+            start()
         else:
             raise_error("IDENTIFICADOR", follow_ProcDecl)
     else:
