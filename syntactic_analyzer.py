@@ -241,6 +241,16 @@ sync_words = ["start", "procedure", "function", "if", "then", "while", "print", 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - Semantic  - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+const_table = {};
+ide_temp = "";
+type_buffer = [];
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - -  Program Flow Functions - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -476,6 +486,7 @@ def var_block():
 
 def type_func():
     if token == "int" or token == "real" or token == "boolean" or token == "string":
+        type_buffer.append(token)
         next_token()
     elif token == "struct":
         next_token()
@@ -582,7 +593,10 @@ def const_id():
         raise_error(first_ConstId, follow_ConstId)
 
 def const():
+    global const_table, ide_temp;
     if token == "id":
+        ide_temp = tokens[tokens_position][2] #saves the identifier to check table later
+        const_table[ide_temp] = {"type": type_buffer.pop()};
         next_token()
         arrays()
     else:
@@ -652,7 +666,9 @@ def index():
         expr()
 
 def arrays():
+    global const_table, ide_temp;
     if token in first_Array:
+        const_table[ide_temp]["category"] = "array"; 
         array()
         arrays()
 
@@ -1022,7 +1038,9 @@ def unary():
         raise_error(first_Unary, follow_Unary)
 
 def value():
+    global ide_temp
     if token == "num" or token == "str" or token == "true" or token == "false":
+        const_table[ide_temp]["value"] = tokens[tokens_position][2]
         next_token()
     elif token == "local" or token == "global":
         next_token()
@@ -1164,18 +1182,18 @@ def read_lexical_output(input_dir):
             token_info = line.split() 
             # 0 = line_number
             # 1 = token type
-            # 2 = token
+            # 2 = token 
             error_codes = ["SIB", "CMF", "NMF", "CoMF", "OpMF"]
             if token_info[1] in error_codes: # check all 
                 continue
             if token_info[1] == "IDE":
-                tokens.append((token_info[0], "id"))
+                tokens.append((token_info[0], "id", token_info[2]))
             elif token_info[1] == "NRO":
-                tokens.append((token_info[0], "num"))
+                tokens.append((token_info[0], "num", token_info[2]))
             elif token_info[1] == "CAD":
-                tokens.append((token_info[0], "str"))
+                tokens.append((token_info[0], "str", token_info[2]))
             else:
-                tokens.append((token_info[0], token_info[2]))
+                tokens.append((token_info[0], token_info[2], ""))
         token = tokens[tokens_position][1]
 
 for filename in os.listdir(input_dir):
