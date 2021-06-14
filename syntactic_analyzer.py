@@ -244,10 +244,12 @@ sync_words = ["start", "procedure", "function", "if", "then", "while", "print", 
 # - - - - - - - - - - - - - - - - - - Semantic  - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 const_table = {}
-var_table = {}
+func_table = {}  # nome, tipos, parametros,
 ide_temp = ""
-type_temp = ""
+type_buffer = []
+func_list = []  # nome, tipos, parametros,
 
 def is_type_correct(expected_type, value, value_general_type):
     if value_general_type == "num":
@@ -414,7 +416,12 @@ def structs():
         struct_block()
         structs()
 
+def test_func_list():
+    for i in func_list:
+        print(i)
+
 def start():
+    test_func_list()
     if token == "start":
         next_token()
         if token != "(":
@@ -492,13 +499,18 @@ def var_block():
 
 def type_func():
     global type_temp
+    token_type = ""
     if token == "int" or token == "real" or token == "boolean" or token == "string":
         type_temp = token
+        token_type = token[0]
         next_token()
+        return token_type
     elif token == "struct":
         next_token()
         if token == "id":
+            token_type = tokens[tokens_position][2]
             next_token()
+            return "struct_" + token_type
     else:
         raise_error(first_Type, follow_Type)
 
@@ -558,7 +570,7 @@ def var():
     if token == "id":
         var_lexeme = get_token_lexeme()
         ide_temp = {"type": type_temp, "class": "var", "lexeme": var_lexeme}
-        var_table[var_lexeme] = ide_temp
+#        var_table[var_lexeme] = ide_temp
         next_token()
         arrays()
     else:
@@ -680,7 +692,7 @@ def index():
 def arrays():
     global const_table, ide_temp;
     if token in first_Array:
-        const_table[ide_temp]["category"] = "array"; 
+#        const_table[ide_temp]["category"] = "array"; 
         array()
         arrays()
 
@@ -734,16 +746,26 @@ def args_list():
         expr()
         args_list()
 
+def append_func():
+    func_list.append({"name": tokens[tokens_position][2]})
+
+def append_func_params(params_initial_letters):
+    name = func_list[-1]["name"] + params_initial_letters
+    func_list[-1]["name"] = name
+
 def func_decl():
+    params_initial_letters = ""
     if token == "function":
         next_token()
         param_type()
         if token == "id":
+            append_func()
             next_token()
             if token != "(":
                 raise_error("(", first_Params)
             next_token()
-            params()
+            params_initial_letters = params()
+            append_func_params(params_initial_letters)
             if token != ")":
                 raise_error(")", follow_FuncDecl)
             next_token()
@@ -754,14 +776,17 @@ def func_decl():
         raise_error("function", follow_FuncDecl)
 
 def proc_decl():
+    params_initial_letters = ""
     if token == "procedure":
         next_token()
         if token == "id":
+            append_func()
             next_token()
             if token != "(":
                 raise_error("(", first_Params)
             next_token()
-            params()
+            params_initial_letters = params()
+            append_func_params(params_initial_letters)
             if token != ")":
                 raise_error(")", first_FuncBlock)
             next_token()
@@ -774,44 +799,62 @@ def proc_decl():
         raise_error("procedure", follow_ProcDecl)
 
 def param_type():
+    param_letter = ""
     if token in first_Type:
-        type_func()
+        param_letter = type_func()
+        return param_letter
     elif token == "id":
-        next_token()
+        param_letter = next_token()
+        return param_letter
     else:
         raise_error(first_ParamType, follow_ParamType)
 
 def params():
+    param_initial_letters = ""
     if token in first_Param:
-        param()
-        params_list()
+        param_initial_letters = param()
+        param_initial_letters += params_list()
+        return param_initial_letters
 
 def param():
+    dimensions = ""
+    param_letter = ""
     if token in first_ParamType:
-        param_type()
+        param_letter = param_type()
         if token == "id":
             next_token()
-            param_arrays()
+            dimensions = param_arrays()
+            return "_" + param_letter + dimensions
         else:
             raise_error("IDENTIFICADOR", follow_Param)
     else:
         raise_error(first_ParamType, follow_ParamType)
 
 def params_list():
+    initial_letters_list = ""
     if token == ",":
         next_token()
-        param()
-        params_list()
+        initial_letters_list += param()
+        initial_letters_list += params_list()
+    return initial_letters_list
 
 def param_arrays():
+    dimensions = 0
     if token == "[":
         next_token()
         if token != "]":
             raise_error("]", first_ParamMultArrays)
+        dimensions = 1
         next_token()
-        param_mult_arrays()
+        dimensions += param_mult_arrays()
+    if dimensions == 0:
+        dimensions = ""
+    else:
+        dimensions = str(dimensions) + "d"
+    return dimensions
 
 def param_mult_arrays():
+    dimensions = 0
     if token == "[":
         next_token()
         if token == "num":
@@ -819,9 +862,11 @@ def param_mult_arrays():
             if token != "]":
                 raise_error("]", first_ParamMultArrays)
             next_token()
-            param_mult_arrays()
+            dimensions = 1
+            dimensions += param_mult_arrays()
         else:
             raise_error("NÚMERO", follow_ParamMultArrays)
+    return dimensions
 
 def func_block():
     if token != "{":
@@ -900,7 +945,7 @@ def var_stm():
     if token in first_StmScope:
         stm_scope()
     elif token == "id":
-        ide_temp = var_table[get_token_lexeme()]
+#        ide_temp = var_table[get_token_lexeme()]
         next_token()
         stm_id()
     elif token in first_StmCmd:
@@ -1059,18 +1104,18 @@ def value():
     if token == "num" or token == "str" or token == "true" or token == "false":
         # if not is_type_correct(const_table[ide_temp]["type"], get_token_lexeme, tokens[tokens_position][1]):
         #     print("Erro semantico")
-        if ide_temp["class"] == "var":
-            if ide_temp["lexeme"] in var_table:
-                if not is_type_correct(ide_temp["type"], tokens[tokens_position][2], tokens[tokens_position][1]):
-                    print("Erro semantico: variável com tipo incorreto")
-            else: 
-                print("Erro semantico: a variável não foi incializado")
-        elif ide_temp["class"] == "const":
-            if ide_temp["lexeme"] in var_table:
-                if not is_type_correct(ide_temp["type"], tokens[tokens_position][1], tokens[tokens_position][2]):
-                    print("Erro semantico: constante com tipo incorreto")
-            else: 
-                print("Erro semantico: a constante não foi incializado")
+        # if ide_temp["class"] == "var":
+        #     if ide_temp["lexeme"] in var_table:
+        #         if not is_type_correct(ide_temp["type"], tokens[tokens_position][2], tokens[tokens_position][1]):
+        #             print("Erro semantico: variável com tipo incorreto")
+        #     else: 
+        #         print("Erro semantico: a variável não foi incializado")
+#        elif ide_temp["class"] == "const":
+# #            if ide_temp["lexeme"] in var_table:
+#                 if not is_type_correct(ide_temp["type"], tokens[tokens_position][1], tokens[tokens_position][2]):
+#                     print("Erro semantico: constante com tipo incorreto")
+#             else: 
+#                 print("Erro semantico: a constante não foi incializado")
         #check ide_temp class
         #if is var -> check var table
         #const_table[ide_temp]["value"] = get_token_lexeme()
@@ -1231,7 +1276,8 @@ def read_lexical_output(input_dir):
         token = tokens[tokens_position][1]
 
 for filename in os.listdir(input_dir):
-    read_lexical_output(input_dir)
+    if filename.startswith('saida'):
+        read_lexical_output(input_dir)
     file_num = filename.split('.')[0][5:]
     with open(f'{output_dir}saida{file_num}.txt', 'w') as fout:
         program()
