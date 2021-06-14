@@ -244,10 +244,9 @@ sync_words = ["start", "procedure", "function", "if", "then", "while", "print", 
 # - - - - - - - - - - - - - - - - - - Semantic  - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-const_table = {};
-ide_temp = "";
-type_buffer = [];
+const_table = {}
+ide_temp = ""
+type_buffer = []
 
 def is_type_correct(expected_type, value, value_general_type):
     if value_general_type == "num":
@@ -255,11 +254,12 @@ def is_type_correct(expected_type, value, value_general_type):
             return True
         elif "." not in value and expected_type == "int":
             return True
-        return False
     elif value_general_type == "str":
         if expected_type == "string":
             return True
-        return False
+    elif value_general_type == "true" or value_general_type == "false" and expected_type == "boolean":
+        return True
+    return False
 
 
 
