@@ -245,12 +245,13 @@ sync_words = ["start", "procedure", "function", "if", "then", "while", "print", 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const_table = {}
+var_table = {}
 ide_temp = ""
-type_buffer = []
+type_temp = ""
 
 def is_type_correct(expected_type, value, value_general_type):
     if value_general_type == "num":
-        if "." in value and expected_type == "float":
+        if "." in value and expected_type == "real":
             return True
         elif "." not in value and expected_type == "int":
             return True
@@ -261,7 +262,9 @@ def is_type_correct(expected_type, value, value_general_type):
         return True
     return False
 
-
+def get_token_lexeme():
+    global tokens, tokens_position
+    return tokens[tokens_position][2]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -488,8 +491,9 @@ def var_block():
         next_token()
 
 def type_func():
+    global type_temp
     if token == "int" or token == "real" or token == "boolean" or token == "string":
-        type_buffer.append(token)
+        type_temp = token
         next_token()
     elif token == "struct":
         next_token()
@@ -550,7 +554,11 @@ def var_id():
         raise_error(first_VarId, follow_VarId)
 
 def var():
+    global ide_temp, var_table
     if token == "id":
+        var_lexeme = get_token_lexeme()
+        ide_temp = {"type": type_temp, "class": "var", "lexeme": var_lexeme}
+        var_table[var_lexeme] = ide_temp
         next_token()
         arrays()
     else:
@@ -598,8 +606,9 @@ def const_id():
 def const():
     global const_table, ide_temp;
     if token == "id":
-        ide_temp = tokens[tokens_position][2] #saves the identifier to check table later
-        const_table[ide_temp] = {"type": type_buffer.pop()};
+        constant_lexeme = get_token_lexeme()
+        ide_temp = {"type": type_temp, "class": "const", "lexeme": constant_lexeme} #saves the identifier to check table later
+        const_table[constant_lexeme] = ide_temp
         next_token()
         arrays()
     else:
@@ -887,9 +896,11 @@ def func_normal_stm():
         raise_error(first_FuncNormalStm, follow_FuncNormalStm)
 
 def var_stm():
+    global ide_temp
     if token in first_StmScope:
         stm_scope()
     elif token == "id":
+        ide_temp = var_table[get_token_lexeme()]
         next_token()
         stm_id()
     elif token in first_StmCmd:
@@ -1037,17 +1048,33 @@ def unary():
     if token == "!":
         next_token()
         unary()
+        #TODO r2
     elif token in first_Value:
         value()
     else:
         raise_error(first_Unary, follow_Unary)
 
 def value():
-    global ide_temp, tokens, tokens_position
+    global ide_temp
     if token == "num" or token == "str" or token == "true" or token == "false":
-        if not is_type_correct(const_table[ide_temp]["type"], tokens[tokens_position][2], tokens[tokens_position][1]):
-            print("Erro semantico")
-        const_table[ide_temp]["value"] = tokens[tokens_position][2]
+        # if not is_type_correct(const_table[ide_temp]["type"], get_token_lexeme, tokens[tokens_position][1]):
+        #     print("Erro semantico")
+        if ide_temp["class"] == "var":
+            if ide_temp["lexeme"] in var_table:
+                if not is_type_correct(ide_temp["type"], tokens[tokens_position][2], tokens[tokens_position][1]):
+                    print("Erro semantico: variável com tipo incorreto")
+            else: 
+                print("Erro semantico: a variável não foi incializado")
+        elif ide_temp["class"] == "const":
+            if ide_temp["lexeme"] in var_table:
+                if not is_type_correct(ide_temp["type"], tokens[tokens_position][1], tokens[tokens_position][2]):
+                    print("Erro semantico: constante com tipo incorreto")
+            else: 
+                print("Erro semantico: a constante não foi incializado")
+        #check ide_temp class
+        #if is var -> check var table
+        #const_table[ide_temp]["value"] = get_token_lexeme()
+        #TODO r1
         next_token()
     elif token == "local" or token == "global":
         next_token()
