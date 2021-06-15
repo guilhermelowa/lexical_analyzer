@@ -268,6 +268,11 @@ def get_token_lexeme():
     global tokens, tokens_position
     return tokens[tokens_position][2]
 
+def raise_semantic_error(msg):
+    print(msg)
+    semantic_output_file.write(msg)
+    
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - -  Program Flow Functions - - - - - - - - - - - - - - -
@@ -437,6 +442,8 @@ def transform_func_list():
 def start():
     transform_func_list()
     test_func_table()
+    check_func_params("testFunction", ["int", "real"])  # ok
+    check_func_params("testFunction", ["int", "int"])  # erro
     if token == "start":
         next_token()
         if token != "(":
@@ -749,15 +756,19 @@ def accesses():
         accesses()
 
 def args():
+    return_args = []
     if token in first_Expr:
-        expr()
-        args_list()
+        return_args += [expr()]
+        return_args += args_list()
+    return return_args
 
 def args_list():
+    return_args = []
     if token == ",":
         next_token()
-        expr()
-        args_list()
+        return_args += [expr()]
+        return_args += args_list()
+    return return_args
 
 def append_func(return_type="None"):
     func_list.append({"name": tokens[tokens_position][2],
@@ -961,19 +972,48 @@ def func_normal_stm():
         raise_error(first_FuncNormalStm, follow_FuncNormalStm)
 
 def var_stm():
-    global ide_temp
     if token in first_StmScope:
         stm_scope()
     elif token == "id":
-#        ide_temp = var_table[get_token_lexeme()]
+        func_id = tokens[tokens_position][2]
         next_token()
-        stm_id()
+        stm_id(func_id)
     elif token in first_StmCmd:
         stm_cmd()
     else:
         raise_error(first_VarStm, follow_VarStm)
 
-def stm_id():
+def get_available_types():
+    # TODO: Get all typedef types and primitive ones
+    primitive_types = ['int', 'real', 'string', 'boolean']
+    struct_types = []
+    typedef_types = []
+    return primitive_types + struct_types + typedef_types
+
+def get_args_types(func_args):
+    #TODO: search args in variables and return their types
+    args_type_list = []
+    available_types = get_available_types()
+    for arg in func_args:
+        if arg in available_types:
+            continue
+        # search arg
+        # get type
+    return args_type_list
+
+def check_func_params(func_id, func_params):
+    idx = 0
+    if func_id is not None:
+        if func_id in func_table.keys():
+            if func_params not in func_table[func_id]["params"]:
+                raise_semantic_error(f"Função {func_id} não recebe os argumentos {func_params}")
+            else:
+                idx = func_table[func_id]["params"].index(func_params)
+            return func_table[func_id]["return"][idx]
+        else:
+            raise_semantic_error(f"Função {func_id} não declarada")
+
+def stm_id(func_id=None):
     if token in first_Assign:
         assign()
     elif token in first_Array:
@@ -986,8 +1026,10 @@ def stm_id():
         accesses()
         assign()
     elif token == "(":
+        func_args = []
         next_token()
-        args()
+        func_args = args()
+        check_func_params(func_id, func_args)
         if token != ")":
             raise_error(")", follow_StmId)
         next_token()
@@ -1027,14 +1069,16 @@ def stm_cmd():
 
 def expr():
     if token in first_Or:
-        or_func()
+        return or_func()
     else:
         raise_error(first_Expr, follow_Expr)
 
 def or_func():
+    return_id = None
     if token in first_And:
-        and_func()
+        return_id = and_func()
         or_()
+        return return_id
     else:
         raise_error(first_Or, follow_Or)
 
@@ -1045,9 +1089,11 @@ def or_():
         or_()
 
 def and_func():
+    return_id = None
     if token in first_Equate:
-        equate()
+        return_id = equate()
         and_()
+        return return_id
     else:
         raise_error(first_And, follow_And)
 
@@ -1058,9 +1104,11 @@ def and_():
         and_()
 
 def equate():
+    return_id = None
     if token in first_Compare:
-        compare()
+        return_id = compare()
         equate_()
+        return return_id
     else:
         raise_error(first_Equate, follow_Equate)
 
@@ -1071,9 +1119,11 @@ def equate_():
         equate_()
 
 def compare():
+    return_id = None
     if token in first_Add:
-        add_func()
+        return_id = add_func()
         compare_()
+        return return_id
     else:
         raise_error(first_Compare, follow_Compare)
 
@@ -1084,9 +1134,11 @@ def compare_():
         compare_()
 
 def add_func():
+    return_id = None
     if token in first_Mult:
-        mult()
+        return_id = mult()
         add_()
+        return return_id
     else:
         raise_error(first_Add, follow_Add)
 
@@ -1097,9 +1149,11 @@ def add_():
         add_()
 
 def mult():
+    return_id = None
     if token in first_Unary:
-        unary()
+        return_id = unary()
         mult_()
+        return return_id
     else:
         raise_error(first_Mult, follow_Mult)
 
@@ -1115,12 +1169,13 @@ def unary():
         unary()
         #TODO r2
     elif token in first_Value:
-        value()
+        return value()
     else:
         raise_error(first_Unary, follow_Unary)
 
 def value():
     global ide_temp
+    lexema = ""
     if token == "num" or token == "str" or token == "true" or token == "false":
         # if not is_type_correct(const_table[ide_temp]["type"], get_token_lexeme, tokens[tokens_position][1]):
         #     print("Erro semantico")
@@ -1145,8 +1200,10 @@ def value():
         next_token()
         access()
     elif token == "id":
+        lexema = tokens[tokens_position][2]
         next_token()
-        id_value()
+        lexema = id_value(lexema)
+        return lexema
     elif token == "(":
         next_token()
         expr()
@@ -1157,10 +1214,12 @@ def value():
     else:
         raise_error(first_Value, follow_Value)
 
-def id_value():
+def id_value(func_id=None):
+    returned_type = func_id
     if token == "(":
         next_token()
-        args()
+        func_params = args()
+        returned_type = check_func_params(func_id, func_params)
         if token == ")":
             next_token()
         else:
@@ -1168,6 +1227,7 @@ def id_value():
     else:
         arrays()
         accesses()
+    return returned_type
 
 def log_expr():
     if token in first_LogOr:
@@ -1270,6 +1330,8 @@ tokens_position = 0
 token = ''
 errors_count = 0
 
+semantic_output_dir = 'semantic_output/'
+
 def read_lexical_output(input_dir):
     global tokens, token, tokens_position, errors_count
     tokens = []
@@ -1300,7 +1362,8 @@ for filename in os.listdir(input_dir):
         read_lexical_output(input_dir)
     file_num = filename.split('.')[0][5:]
     with open(f'{output_dir}saida{file_num}.txt', 'w') as fout:
-        program()
+        with open(f'{semantic_output_dir}saida{file_num}.txt', 'w') as semantic_output_file:
+            program()
     files_read += 1
 
 print(f"Read {files_read} files\
