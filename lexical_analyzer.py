@@ -235,7 +235,7 @@ for filename in os.listdir(input_dir):
 
         with open(f'{input_dir}{filename}', 'r', encoding='iso8859-1') as fin:
             file_string = fin.read()
-            current_position = 0 #TODO Put these in correct python global variables patterns
+            current_position = 0  #TODO Put these in correct python global variables patterns
             line = 1
             tokens = []
             errors = 0

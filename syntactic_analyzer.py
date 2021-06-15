@@ -252,6 +252,30 @@ typedef_table = {}
 struct_table = {}
 func_list = []  # nome, tipos, parametros,
 
+# - - - - - - - - - - - - - - - General - - - - - - - - - - - - - - - - - - - - - - - - -
+
+def get_token_name():
+    global tokens, tokens_position
+    return tokens[tokens_position][2]
+
+def raise_semantic_error(msg):
+    print(msg)
+    semantic_output_file.write(msg)
+
+# - - - - - - - - - - - - - - - Type checking - - - - - - - - - - - - - - - - - - - - - -
+
+def get_available_types():
+    primitive_types = ['int', 'real', 'string', 'boolean']
+    struct_types = list(struct_table.keys())
+    typedef_types = list(typedef_table.keys())
+    return primitive_types + struct_types + typedef_types
+
+def get_num_type(num):
+    if "." in num:
+        return "real"
+    else:
+        return "int"
+
 def is_type_correct(expected_type, value, value_general_type):
     if value_general_type == "num":
         if "." in value and expected_type == "real":
@@ -265,14 +289,92 @@ def is_type_correct(expected_type, value, value_general_type):
         return True
     return False
 
-def get_token_name():
-    global tokens, tokens_position
-    return tokens[tokens_position][2]
+# - - - - - - - - - - - - - - - Typedef - - - - - - - - - - - - - - - - - - - - - -
 
-def raise_semantic_error(msg):
-    print(msg)
-    semantic_output_file.write(msg)
-    
+def add_typedef(primitive_type, new_type):
+    typedef_table = {new_type: primitive_type}
+
+# - - - - - - - - - - - - - - - Functions - - - - - - - - - - - - - - - - - - - - - -
+
+def append_func(return_type="None"):
+    func_list.append({"name": tokens[tokens_position][2],
+                    "params": [],
+                    "return": return_type
+    })
+
+def append_func_params(params):
+    func_list[-1]["params"] = params
+
+def get_arg_type(arg):
+    available_types = get_available_types()
+    if arg in available_types:
+        return arg
+    if isinstance(arg, dict):
+        general_type = arg["general_type"]
+        if general_type == 'num':
+            return get_num_type(arg["value"])
+        if general_type == "str":
+            return "string"
+        if general_type == "true" or general_type == "false":
+            return "boolean"
+    if arg in ide_table.keys():
+        return ide_table[arg]["type"]
+    raise_semantic_error(f'Variável {arg}\
+        usada como parâmetro não foi declarada')
+    return None
+
+def get_args_types(func_args):
+    args_type_list = []
+    available_types = get_available_types()
+    for arg in func_args:
+        args_type_list.append(get_arg_type(arg))
+    return args_type_list
+
+def check_func_params(func_id, func_params):
+    func_params = get_args_types(func_params)
+    idx = 0
+
+    if func_id is not None:
+        if func_id in func_table.keys():
+            if func_params not in func_table[func_id]["params"]:
+                raise_semantic_error(f"Função {func_id} não recebe os argumentos {func_params}")
+            else:
+                idx = func_table[func_id]["params"].index(func_params)
+            return func_table[func_id]["return"][idx]
+        else:
+            raise_semantic_error(f"Função {func_id} não declarada")
+
+def test_func_list():
+    for i in func_list:
+        print(i)
+
+def test_func_table():
+    for key in func_table.keys():
+        print(key, func_table[key])
+
+def transform_func_list():
+    for func in func_list:
+        name = func["name"]
+        if name not in func_table.keys():
+            func_table[name] = {"params": [func["params"]],
+                                "return": [func["return"]]}
+        else:
+            func_table[name]["params"].append(func["params"])
+            func_table[name]["return"].append(func["return"])
+
+# - - - - - - - - - - - - - - -  Structs - - - - - - - - - - - - - - -
+
+def append_struct(struct_name):
+    # TODO: Pegar os campos da struct e adicionar uma lista deles.
+    # Pode ser uma tupla com tipo e identificador. Por ex:
+    # [(int, a), (real, b), (string, c)]
+    # pra struct{
+    #    int a = 3
+    #    real b = 3.2
+    #    string c = "ola Mundo"
+    # }
+    struct_table["struct_" + struct_name] = None
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - -  Program Flow Functions - - - - - - - - - - - - - - -
@@ -421,24 +523,6 @@ def structs():
         struct_block()
         structs()
 
-def test_func_list():
-    for i in func_list:
-        print(i)
-
-def test_func_table():
-    for key in func_table.keys():
-        print(key, func_table[key])
-
-def transform_func_list():
-    for func in func_list:
-        name = func["name"]
-        if name not in func_table.keys():
-            func_table[name] = {"params": [func["params"]],
-                                "return": [func["return"]]}
-        else:
-            func_table[name]["params"].append(func["params"])
-            func_table[name]["return"].append(func["return"])
-
 def start():
     transform_func_list()
     test_func_table()
@@ -468,17 +552,6 @@ def decl():
         proc_decl()
     else:
         raise_error(first_Decl, follow_Decl)
-
-def append_struct(struct_name):
-    # TODO: Pegar os campos da struct e adicionar uma lista deles.
-    # Pode ser uma tupla com tipo e identificador. Por ex:
-    # [(int, a), (real, b), (string, c)]
-    # pra struct{
-    #    int a = 3
-    #    real b = 3.2
-    #    string c = "ola Mundo"
-    # }
-    struct_table["struct_" + struct_name] = None
 
 def struct_block():
     if token == "struct":
@@ -546,9 +619,6 @@ def type_func():
             return "struct_" + token_type
     else:
         raise_error(first_Type, follow_Type)
-
-def add_typedef(primitive_type, new_type):
-    typedef_table = {new_type: primitive_type}
 
 def typedef():
     if token == "typedef":
@@ -789,15 +859,6 @@ def args_list():
         return_args += args_list()
     return return_args
 
-def append_func(return_type="None"):
-    func_list.append({"name": tokens[tokens_position][2],
-                    "params": [],
-                    "return": return_type
-    })
-
-def append_func_params(params):
-    func_list[-1]["params"] = params
-
 def func_decl():
     func_params = []
     return_type = ""
@@ -1007,57 +1068,6 @@ def var_stm():
         stm_cmd()
     else:
         raise_error(first_VarStm, follow_VarStm)
-
-def get_available_types():
-    primitive_types = ['int', 'real', 'string', 'boolean']
-    struct_types = list(struct_table.keys())
-    typedef_types = list(typedef_table.keys())
-    return primitive_types + struct_types + typedef_types
-
-def get_num_type(num):
-    if "." in num:
-        return "real"
-    else:
-        return "int"
-
-def get_arg_type(arg):
-    available_types = get_available_types()
-    if arg in available_types:
-        return arg
-    if isinstance(arg, dict):
-        general_type = arg["general_type"]
-        if general_type == 'num':
-            return get_num_type(arg["value"])
-        if general_type == "str":
-            return "string"
-        if general_type == "true" or general_type == "false":
-            return "boolean"
-    if arg in ide_table.keys():
-        return ide_table[arg]["type"]
-    raise_semantic_error(f'Variável {arg}\
-        usada como parâmetro não foi declarada')
-    return None
-
-def get_args_types(func_args):
-    args_type_list = []
-    available_types = get_available_types()
-    for arg in func_args:
-        args_type_list.append(get_arg_type(arg))
-    return args_type_list
-
-def check_func_params(func_id, func_params):
-    func_params = get_args_types(func_params)
-    idx = 0
-
-    if func_id is not None:
-        if func_id in func_table.keys():
-            if func_params not in func_table[func_id]["params"]:
-                raise_semantic_error(f"Função {func_id} não recebe os argumentos {func_params}")
-            else:
-                idx = func_table[func_id]["params"].index(func_params)
-            return func_table[func_id]["return"][idx]
-        else:
-            raise_semantic_error(f"Função {func_id} não declarada")
 
 def stm_id(func_id=None):
     if token in first_Assign:
