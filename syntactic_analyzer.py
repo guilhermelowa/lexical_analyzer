@@ -246,8 +246,10 @@ sync_words = ["start", "procedure", "function", "if", "then", "while", "print", 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 const_table = {}
+ide_table = {}
 func_table = {}  # nome, tipos, parametros,
 ide_temp = ""
+#type_temp = ""
 type_buffer = []
 func_list = []  # nome, tipos, parametros,
 
@@ -264,7 +266,7 @@ def is_type_correct(expected_type, value, value_general_type):
         return True
     return False
 
-def get_token_lexeme():
+def get_token_name():
     global tokens, tokens_position
     return tokens[tokens_position][2]
 
@@ -555,9 +557,10 @@ def var_decls():
 
 def var_decl():
     if token in first_Type:
-        type_func()
-        var()
+        var_type = type_func() #TODO Fazer verificacao atribuicao de tipos
+        var_name = var()
         var_list()
+        ide_table[var_name] = {"type": var_type, "class": "var"}
         if token != ";":
             raise_error(";", follow_VarDecl)
         else:
@@ -588,11 +591,10 @@ def var_id():
 def var():
     global ide_temp, var_table
     if token == "id":
-        var_lexeme = get_token_lexeme()
-        # ide_temp = {"type": type_temp, "class": "var", "lexeme": var_lexeme}
-#        var_table[var_lexeme] = ide_temp
+        var_name = get_token_name()
         next_token()
         arrays()
+        return var_name
     else:
         raise_error("IDENTIFICADOR", follow_Var)
 
@@ -609,9 +611,12 @@ def const_decls():
 
 def const_decl():
     if token in first_Type:
-        type_func()
-        const()
-        const_list()
+        const_type = type_func()
+        const_name = const()
+        const_value = const_list()
+        if not is_type_correct(const_type, const_value["value"], const_value["general_type"]):
+            print("Erro: declaração de constante com tipo inválido.")
+        ide_table[const_name] = {"type": const_type, "class": "const"}
     elif token in first_Typedef:
         typedef()
     elif token in first_StmScope:
@@ -638,24 +643,23 @@ def const_id():
 def const():
     global const_table, ide_temp;
     if token == "id":
-        constant_lexeme = get_token_lexeme()
-        # ide_temp = {"type": type_temp, "class": "const", "lexeme": constant_lexeme} #saves the identifier to check table later
-        const_table[constant_lexeme] = ide_temp
+        const_name = get_token_name()
         next_token()
         arrays()
+        return const_name
     else:
         raise_error("IDENTIFICADOR", follow_Const)
 
 def const_list():
     if token == ",":
         next_token()
-        const()
-        const_list()
+        const_list() #TODO tratar dos casos lista de constantes
     elif token == "=":
         next_token()
-        decl_atribute()
+        token_value = decl_atribute()
         if token == ";":
             next_token()
+            return token_value
         else:
             raise_error(";", follow_ConstList)
     else:
@@ -665,7 +669,8 @@ def decl_atribute():
     if token in first_ArrayDecl:
         array_decl()
     elif token in first_Expr:
-        expr()
+        token_value = expr()
+        return token_value
     else:
         raise_error(first_DeclAtribute, follow_DeclAtribute)
 
@@ -710,7 +715,7 @@ def index():
         expr()
 
 def arrays():
-    global const_table, ide_temp;
+#    global const_table, ide_temp;
     if token in first_Array:
 #        const_table[ide_temp]["category"] = "array"; 
         array()
@@ -719,9 +724,10 @@ def arrays():
 def assign():
     if token == "=":
         next_token()
-        expr()
+        token_value = expr()
         if token == ";":
             next_token()
+            return token_value
         else:
             raise_error(";", follow_Assign)
     elif token == "++":
@@ -975,9 +981,15 @@ def var_stm():
     if token in first_StmScope:
         stm_scope()
     elif token == "id":
-        func_id = tokens[tokens_position][2]
+        var_name = get_token_name()
         next_token()
-        stm_id(func_id)
+        var_value = stm_id(var_name)
+        if not var_name in ide_table:
+            print("Erro: variável não instanciada")
+        elif ide_table[var_name]["class"] == "const":
+            print("Erro: não é possível atribbuir valores a uma constante")
+        elif not is_type_correct(ide_table[var_name]["type"], var_value["value"], var_value["general_type"]):
+            print("Erro: atribuição de variável com tipo errado")
     elif token in first_StmCmd:
         stm_cmd()
     else:
@@ -1015,7 +1027,8 @@ def check_func_params(func_id, func_params):
 
 def stm_id(func_id=None):
     if token in first_Assign:
-        assign()
+        token_value = assign()
+        return token_value
     elif token in first_Array:
         array()
         arrays()
@@ -1076,9 +1089,9 @@ def expr():
 def or_func():
     return_id = None
     if token in first_And:
-        return_id = and_func()
+        token_value = and_func()
         or_()
-        return return_id
+        return token_value
     else:
         raise_error(first_Or, follow_Or)
 
@@ -1091,9 +1104,9 @@ def or_():
 def and_func():
     return_id = None
     if token in first_Equate:
-        return_id = equate()
+        token_value = equate()
         and_()
-        return return_id
+        return token_value
     else:
         raise_error(first_And, follow_And)
 
@@ -1106,9 +1119,9 @@ def and_():
 def equate():
     return_id = None
     if token in first_Compare:
-        return_id = compare()
+        token_value = compare()
         equate_()
-        return return_id
+        return token_value 
     else:
         raise_error(first_Equate, follow_Equate)
 
@@ -1121,9 +1134,9 @@ def equate_():
 def compare():
     return_id = None
     if token in first_Add:
-        return_id = add_func()
+        token_value = add_func()
         compare_()
-        return return_id
+        return token_value
     else:
         raise_error(first_Compare, follow_Compare)
 
@@ -1136,9 +1149,9 @@ def compare_():
 def add_func():
     return_id = None
     if token in first_Mult:
-        return_id = mult()
+        token_value = mult()
         add_()
-        return return_id
+        return token_value
     else:
         raise_error(first_Add, follow_Add)
 
@@ -1151,9 +1164,9 @@ def add_():
 def mult():
     return_id = None
     if token in first_Unary:
-        return_id = unary()
+        token_value = unary()
         mult_()
-        return return_id
+        return token_value
     else:
         raise_error(first_Mult, follow_Mult)
 
@@ -1167,7 +1180,6 @@ def unary():
     if token == "!":
         next_token()
         unary()
-        #TODO r2
     elif token in first_Value:
         return value()
     else:
@@ -1177,25 +1189,9 @@ def value():
     global ide_temp
     lexema = ""
     if token == "num" or token == "str" or token == "true" or token == "false":
-        # if not is_type_correct(const_table[ide_temp]["type"], get_token_lexeme, tokens[tokens_position][1]):
-        #     print("Erro semantico")
-        # if ide_temp["class"] == "var":
-        #     if ide_temp["lexeme"] in var_table:
-        #         if not is_type_correct(ide_temp["type"], tokens[tokens_position][2], tokens[tokens_position][1]):
-        #             print("Erro semantico: variável com tipo incorreto")
-        #     else: 
-        #         print("Erro semantico: a variável não foi incializado")
-#        elif ide_temp["class"] == "const":
-# #            if ide_temp["lexeme"] in var_table:
-#                 if not is_type_correct(ide_temp["type"], tokens[tokens_position][1], tokens[tokens_position][2]):
-#                     print("Erro semantico: constante com tipo incorreto")
-#             else: 
-#                 print("Erro semantico: a constante não foi incializado")
-        #check ide_temp class
-        #if is var -> check var table
-        #const_table[ide_temp]["value"] = get_token_lexeme()
-        #TODO r1
+        token_value = {"value": tokens[tokens_position][2], "general_type": token}
         next_token()
+        return token_value
     elif token == "local" or token == "global":
         next_token()
         access()
