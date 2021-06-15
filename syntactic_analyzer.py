@@ -245,10 +245,8 @@ sync_words = ["start", "procedure", "function", "if", "then", "while", "print", 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-const_table = {}
 ide_table = {}
 func_table = {}  # nome, tipos, parametros,
-ide_temp = ""
 type_buffer = []
 typedef_table = {}
 struct_table = {}
@@ -275,7 +273,6 @@ def raise_semantic_error(msg):
     print(msg)
     semantic_output_file.write(msg)
     
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - -  Program Flow Functions - - - - - - - - - - - - - - -
@@ -608,7 +605,6 @@ def var_id():
         raise_error(first_VarId, follow_VarId)
 
 def var():
-    global ide_temp, var_table
     if token == "id":
         var_name = get_token_name()
         next_token()
@@ -661,7 +657,6 @@ def const_id():
         raise_error(first_ConstId, follow_ConstId)
 
 def const():
-    global const_table, ide_temp;
     if token == "id":
         const_name = get_token_name()
         next_token()
@@ -735,9 +730,7 @@ def index():
         expr()
 
 def arrays():
-#    global const_table, ide_temp;
     if token in first_Array:
-#        const_table[ide_temp]["category"] = "array"; 
         array()
         arrays()
 
@@ -1008,8 +1001,8 @@ def var_stm():
             print("Erro: variável não instanciada")
         elif ide_table[var_name]["class"] == "const":
             print("Erro: não é possível atribbuir valores a uma constante")
-        elif not is_type_correct(ide_table[var_name]["type"], var_value["value"], var_value["general_type"]):
-            print("Erro: atribuição de variável com tipo errado")
+        # elif not is_type_correct(ide_table[var_name]["type"], var_value["value"], var_value["general_type"]):
+        #     print("Erro: atribuição de variável com tipo errado")
     elif token in first_StmCmd:
         stm_cmd()
     else:
@@ -1017,23 +1010,45 @@ def var_stm():
 
 def get_available_types():
     primitive_types = ['int', 'real', 'string', 'boolean']
-    struct_types = struct_table.keys()
-    typedef_types = typedef_table.keys()
+    struct_types = list(struct_table.keys())
+    typedef_types = list(typedef_table.keys())
     return primitive_types + struct_types + typedef_types
 
+def get_num_type(num):
+    if "." in num:
+        return "real"
+    else:
+        return "int"
+
+def get_arg_type(arg):
+    available_types = get_available_types()
+    if arg in available_types:
+        return arg
+    if isinstance(arg, dict):
+        general_type = arg["general_type"]
+        if general_type == 'num':
+            return get_num_type(arg["value"])
+        if general_type == "str":
+            return "string"
+        if general_type == "true" or general_type == "false":
+            return "boolean"
+    if arg in ide_table.keys():
+        return ide_table[arg]["type"]
+    raise_semantic_error(f'Variável {arg}\
+        usada como parâmetro não foi declarada')
+    return None
+
 def get_args_types(func_args):
-    #TODO: search args in variables and return their types
     args_type_list = []
     available_types = get_available_types()
     for arg in func_args:
-        if arg in available_types:
-            continue
-        # search arg
-        # get type
+        args_type_list.append(get_arg_type(arg))
     return args_type_list
 
 def check_func_params(func_id, func_params):
+    func_params = get_args_types(func_params)
     idx = 0
+
     if func_id is not None:
         if func_id in func_table.keys():
             if func_params not in func_table[func_id]["params"]:
@@ -1205,8 +1220,6 @@ def unary():
         raise_error(first_Unary, follow_Unary)
 
 def value():
-    global ide_temp
-    lexema = ""
     if token == "num" or token == "str" or token == "true" or token == "false":
         token_value = {"value": tokens[tokens_position][2], "general_type": token}
         next_token()
