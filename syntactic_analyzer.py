@@ -246,6 +246,7 @@ sync_words = ["start", "procedure", "function", "if", "then", "while", "print", 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 const_table = {}
+ide_table = {}
 func_table = {}  # nome, tipos, parametros,
 ide_temp = ""
 #type_temp = ""
@@ -265,7 +266,7 @@ def is_type_correct(expected_type, value, value_general_type):
         return True
     return False
 
-def get_token_lexeme():
+def get_token_name():
     global tokens, tokens_position
     return tokens[tokens_position][2]
 
@@ -421,8 +422,23 @@ def test_func_list():
     for i in func_list:
         print(i)
 
+def test_func_table():
+    for key in func_table.keys():
+        print(key, func_table[key])
+
+def transform_func_list():
+    for func in func_list:
+        name = func["name"]
+        if name not in func_table.keys():
+            func_table[name] = {"params": [func["params"]],
+                                "return": [func["return"]]}
+        else:
+            func_table[name]["params"].append(func["params"])
+            func_table[name]["return"].append(func["return"])
+
 def start():
-    test_func_list()
+    transform_func_list()
+    test_func_table()
     if token == "start":
         next_token()
         if token != "(":
@@ -499,11 +515,9 @@ def var_block():
         next_token()
 
 def type_func():
-    # global type_temp
-    # token_type = ""
+    token_type = ""
     if token == "int" or token == "real" or token == "boolean" or token == "string":
-        # type_temp = token
-        token_type = token[0]
+        token_type = token
         next_token()
         return token_type
     elif token == "struct":
@@ -536,9 +550,10 @@ def var_decls():
 
 def var_decl():
     if token in first_Type:
-        type_func()
-        var()
+        var_type = type_func() #TODO Fazer verificacao atribuicao de tipos
+        var_name = var()
         var_list()
+        ide_table[var_name] = {"type": var_type, "class": "var"}
         if token != ";":
             raise_error(";", follow_VarDecl)
         else:
@@ -569,11 +584,10 @@ def var_id():
 def var():
     global ide_temp, var_table
     if token == "id":
-        var_lexeme = get_token_lexeme()
-#        ide_temp = {"type": type_temp, "class": "var", "lexeme": var_lexeme}
-#        var_table[var_lexeme] = ide_temp
+        var_name = get_token_name()
         next_token()
         arrays()
+        return var_name
     else:
         raise_error("IDENTIFICADOR", follow_Var)
 
@@ -593,7 +607,9 @@ def const_decl():
         const_type = type_func()
         const_name = const()
         const_value = const_list()
-        print(const_type, const_name, const_value)
+        if not is_type_correct(const_type, const_value["value"], const_value["general_type"]):
+            print("Erro: declaração de constante com tipo inválido.")
+        ide_table[const_name] = {"type": const_type, "class": "const"}
     elif token in first_Typedef:
         typedef()
     elif token in first_StmScope:
@@ -620,10 +636,7 @@ def const_id():
 def const():
     global const_table, ide_temp;
     if token == "id":
-#       constant_lexeme = get_token_lexeme()
-#       ide_temp = {"type": type_temp, "class": "const", "lexeme": constant_lexeme} #saves the identifier to check table later
-#        const_table[constant_lexeme] = ide_temp
-        const_name = tokens[tokens_position][2]
+        const_name = get_token_name()
         next_token()
         arrays()
         return const_name
@@ -651,8 +664,6 @@ def decl_atribute():
     elif token in first_Expr:
         token_value = expr()
         return token_value
-        print("CHEGOUA ATE AQUI")
-        print(token_value)
     else:
         raise_error(first_DeclAtribute, follow_DeclAtribute)
 
@@ -706,9 +717,10 @@ def arrays():
 def assign():
     if token == "=":
         next_token()
-        expr()
+        token_value = expr()
         if token == ";":
             next_token()
+            return token_value
         else:
             raise_error(";", follow_Assign)
     elif token == "++":
@@ -753,26 +765,29 @@ def args_list():
         expr()
         args_list()
 
-def append_func():
-    func_list.append({"name": tokens[tokens_position][2]})
+def append_func(return_type="None"):
+    func_list.append({"name": tokens[tokens_position][2],
+                    "params": [],
+                    "return": return_type
+    })
 
-def append_func_params(params_initial_letters):
-    name = func_list[-1]["name"] + params_initial_letters
-    func_list[-1]["name"] = name
+def append_func_params(params):
+    func_list[-1]["params"] = params
 
 def func_decl():
-    params_initial_letters = ""
+    func_params = []
+    return_type = ""
     if token == "function":
         next_token()
-        param_type()
+        return_type = param_type()
         if token == "id":
-            append_func()
+            append_func(return_type)
             next_token()
             if token != "(":
                 raise_error("(", first_Params)
             next_token()
-            params_initial_letters = params()
-            append_func_params(params_initial_letters)
+            func_params = params()
+            append_func_params(func_params)
             if token != ")":
                 raise_error(")", follow_FuncDecl)
             next_token()
@@ -783,7 +798,7 @@ def func_decl():
         raise_error("function", follow_FuncDecl)
 
 def proc_decl():
-    params_initial_letters = ""
+    func_params = []
     if token == "procedure":
         next_token()
         if token == "id":
@@ -792,8 +807,8 @@ def proc_decl():
             if token != "(":
                 raise_error("(", first_Params)
             next_token()
-            params_initial_letters = params()
-            append_func_params(params_initial_letters)
+            func_params = params()
+            append_func_params(func_params)
             if token != ")":
                 raise_error(")", first_FuncBlock)
             next_token()
@@ -806,44 +821,48 @@ def proc_decl():
         raise_error("procedure", follow_ProcDecl)
 
 def param_type():
-    param_letter = ""
+    param_type_str = ""
     if token in first_Type:
-        param_letter = type_func()
-        return param_letter
+        param_type_str = type_func()
     elif token == "id":
-        param_letter = next_token()
-        return param_letter
+        param_type_str = tokens[tokens_position][2]
+        next_token()
     else:
         raise_error(first_ParamType, follow_ParamType)
+    return param_type_str
 
 def params():
-    param_initial_letters = ""
+    func_params = []
+    extra_params = []
     if token in first_Param:
-        param_initial_letters = param()
-        param_initial_letters += params_list()
-        return param_initial_letters
+        func_params.append(param())
+        extra_params = params_list()
+        func_params += extra_params
+        return func_params
 
 def param():
     dimensions = ""
-    param_letter = ""
+    func_single_param = ""
     if token in first_ParamType:
-        param_letter = param_type()
+        func_single_param = param_type()
         if token == "id":
             next_token()
             dimensions = param_arrays()
-            return "_" + param_letter + dimensions
+            return func_single_param + dimensions
         else:
             raise_error("IDENTIFICADOR", follow_Param)
     else:
         raise_error(first_ParamType, follow_ParamType)
 
 def params_list():
-    initial_letters_list = ""
+    func_params = []
+    extra_params = []
     if token == ",":
         next_token()
-        initial_letters_list += param()
-        initial_letters_list += params_list()
-    return initial_letters_list
+        func_params.append(param())
+        extra_params = params_list()
+        func_params += extra_params
+    return func_params
 
 def param_arrays():
     dimensions = 0
@@ -952,9 +971,15 @@ def var_stm():
     if token in first_StmScope:
         stm_scope()
     elif token == "id":
-#        ide_temp = var_table[get_token_lexeme()]
+        var_name = get_token_name()
         next_token()
-        stm_id()
+        var_value = stm_id()
+        if not var_name in ide_table:
+            print("Erro: variável não instanciada")
+        elif ide_table[var_name]["class"] == "const":
+            print("Erro: não é possível atribbuir valores a uma constante")
+        elif not is_type_correct(ide_table[var_name]["type"], var_value["value"], var_value["general_type"]):
+            print("Erro: atribuição de variável com tipo errado")
     elif token in first_StmCmd:
         stm_cmd()
     else:
@@ -962,7 +987,8 @@ def var_stm():
 
 def stm_id():
     if token in first_Assign:
-        assign()
+        token_value = assign()
+        return token_value
     elif token in first_Array:
         array()
         arrays()
@@ -1116,7 +1142,7 @@ def unary():
 def value():
     global ide_temp
     if token == "num" or token == "str" or token == "true" or token == "false":
-        token_value = {"name": tokens[tokens_position][2], "general_type": token}
+        token_value = {"value": tokens[tokens_position][2], "general_type": token}
         next_token()
         return token_value
     elif token == "local" or token == "global":
