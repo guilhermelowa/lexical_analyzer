@@ -249,8 +249,9 @@ const_table = {}
 ide_table = {}
 func_table = {}  # nome, tipos, parametros,
 ide_temp = ""
-#type_temp = ""
 type_buffer = []
+typedef_table = {}
+struct_table = {}
 func_list = []  # nome, tipos, parametros,
 
 def is_type_correct(expected_type, value, value_general_type):
@@ -471,10 +472,23 @@ def decl():
     else:
         raise_error(first_Decl, follow_Decl)
 
+def append_struct(struct_name):
+    # TODO: Pegar os campos da struct e adicionar uma lista deles.
+    # Pode ser uma tupla com tipo e identificador. Por ex:
+    # [(int, a), (real, b), (string, c)]
+    # pra struct{
+    #    int a = 3
+    #    real b = 3.2
+    #    string c = "ola Mundo"
+    # }
+    struct_table["struct_" + struct_name] = None
+
 def struct_block():
     if token == "struct":
         next_token()
         if token == "id":
+            struct_name = get_token_name()
+            append_struct(struct_name)
             next_token()
             extends()
             if token != "{":
@@ -536,11 +550,16 @@ def type_func():
     else:
         raise_error(first_Type, follow_Type)
 
+def add_typedef(primitive_type, new_type):
+    typedef_table = {new_type: primitive_type}
+
 def typedef():
     if token == "typedef":
         next_token()
-        type_func()
+        primitive_type = type_func()
         if token == "id":
+            new_type = get_token_name()
+            add_typedef(primitive_type, new_type)
             next_token()
             if token != ";":
                 raise_error(';')
@@ -614,9 +633,10 @@ def const_decl():
         const_type = type_func()
         const_name = const()
         const_value = const_list()
-        if not is_type_correct(const_type, const_value["value"], const_value["general_type"]):
-            print("Erro: declaração de constante com tipo inválido.")
-        ide_table[const_name] = {"type": const_type, "class": "const"}
+        if const_value is not None:
+            if not is_type_correct(const_type, const_value["value"], const_value["general_type"]):
+                print("Erro: declaração de constante com tipo inválido.")
+            ide_table[const_name] = {"type": const_type, "class": "const"}
     elif token in first_Typedef:
         typedef()
     elif token in first_StmScope:
@@ -996,10 +1016,9 @@ def var_stm():
         raise_error(first_VarStm, follow_VarStm)
 
 def get_available_types():
-    # TODO: Get all typedef types and primitive ones
     primitive_types = ['int', 'real', 'string', 'boolean']
-    struct_types = []
-    typedef_types = []
+    struct_types = struct_table.keys()
+    typedef_types = typedef_table.keys()
     return primitive_types + struct_types + typedef_types
 
 def get_args_types(func_args):
@@ -1196,7 +1215,7 @@ def value():
         next_token()
         access()
     elif token == "id":
-        lexema = tokens[tokens_position][2]
+        lexema = get_token_name()
         next_token()
         lexema = id_value(lexema)
         return lexema
@@ -1299,8 +1318,10 @@ def log_value():
         next_token()
         access()
     elif token == "id":
+        lexema = get_token_name()
         next_token()
-        id_value()
+        lexema = id_value(lexema)
+        return lexema
     elif token == "(":
         next_token()
         log_expr()
