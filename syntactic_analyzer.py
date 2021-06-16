@@ -264,8 +264,8 @@ def raise_semantic_error(msg):
         msg += "\n"
     
     full_msg += msg
-    print(msg)
-    semantic_output_file.write(msg)
+    print(full_msg) 
+    semantic_output_file.write(full_msg)
 
 # - - - - - - - - - - - - - - - Type checking - - - - - - - - - - - - - - - - - - - - - -
 
@@ -827,7 +827,8 @@ def array():
 
 def index():
     if token in first_Expr:
-        expr()
+        lexema = expr()
+        compare_types(lexema, "int")
 
 def arrays():
     if token in first_Array:
@@ -1087,12 +1088,12 @@ def var_stm():
     elif token == "id":
         var_name = get_token_name()
 
-        if not var_name in ide_table:
-            raise_semantic_error(f"Variável {var_name} não instanciada")
-            
+        # if not var_name in ide_table:
+        #     raise_semantic_error(f"Variável {var_name} não instanciada")
+
         next_token()
         right_lexema = stm_id(var_name)
-        compare_types(var_name, right_lexema)
+        compare_types(var_name, right_lexema) #TODO Tá dando erro aqui quando vai comparar
         
         # elif not is_type_correct(ide_table[var_name]["type"], var_value["value"], var_value["general_type"]):
         #     print("Erro: atribuição de variável com tipo errado")
@@ -1102,24 +1103,33 @@ def var_stm():
         raise_error(first_VarStm, follow_VarStm)
 
 def check_const_assign(var_name):
-    if ide_table[var_name]["class"] == "const":
-        raise_semantic_error(f"Variável {var_name} é uma constante.\
-            \nNão é possível atribuir valores a uma constante")
+    if var_name in ide_table:
+        if ide_table[var_name]["class"] == "const":
+            raise_semantic_error(f"Variável {var_name} é uma constante.\
+                \nNão é possível atribuir valores a uma constante")
+
+def check_variable_exists(var_name):
+    if not var_name in ide_table:
+        raise_semantic_error(f"Variável {var_name} não instanciada")
 
 def stm_id(lexema=None):
     if token in first_Assign:
+        check_variable_exists(lexema)
         check_const_assign(lexema)
-        token_value = assign()
-        return token_value
+        return assign()
     elif token in first_Array:
+        check_variable_exists(lexema) #TODO Colocar constantes (verificação de atribuição)
+        check_const_assign(lexema)
         array()
         arrays()
         accesses()
-        assign()
+        return assign() 
     elif token in first_Access:
+        check_variable_exists(lexema)
+        check_const_assign(lexema)
         access()
         accesses()
-        assign()
+        return assign()
     elif token == "(":
         func_args = []
         next_token()
