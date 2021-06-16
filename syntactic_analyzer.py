@@ -345,6 +345,11 @@ def get_arg_type(arg):
             return "boolean"
     if arg in ide_table.keys():
         return ide_table[arg]["type"]
+    # TODO: Adicionar retorno da função, caso arg seja uma função.
+    # Arg precisa conter, além do nome da função, os argumentos, por causa da sobrecarga.
+    # Pode usar check_func_params tb
+    # if arg in func_table.keys():
+
     raise_semantic_error(f'Variável {arg}\
         usada como parâmetro não foi declarada') #TODO Talvez seja melhor verificar esse erro fora, ele ta aparecendo em funcao n declarada
     return None
@@ -394,7 +399,7 @@ def transform_func_list():
 
 # - - - - - - - - - - - - - - -  Structs - - - - - - - - - - - - - - -
 
-def append_struct(struct_name):
+def append_struct(struct_name, var_list=None):
     # TODO: Pegar os campos da struct e adicionar uma lista deles.
     # Pode ser uma tupla com tipo e identificador. Por ex:
     # [(int, a), (real, b), (string, c)]
@@ -403,7 +408,15 @@ def append_struct(struct_name):
     #    real b = 3.2
     #    string c = "ola Mundo"
     # }
-    struct_table["struct_" + struct_name] = None
+
+    # lista de listas:
+    # primeira lista, de constantes
+    # segunda de variáveis
+    if var_list is None:
+        struct_table[struct_name] = None
+        return
+
+
 # - - - - - - - - - - - - - - -  Consts e Vars - - - - - - - - - - - - - - -
 
 def check_const_assign(var_name):
@@ -594,6 +607,13 @@ def decl():
     else:
         raise_error(first_Decl, follow_Decl)
 
+def get_struct_vars(struct_name):
+    if struct_name in struct_table.keys():
+        return struct_table[struct_name]
+    else:
+        raise_semantic_error("Struct {struct_name} não foi definida")
+        return None
+
 def struct_block():
     if token == "struct":
         next_token()
@@ -601,12 +621,17 @@ def struct_block():
             struct_name = get_token_name()
             append_struct(struct_name)
             next_token()
-            extends()
+            extended_struct_name = extends()
+            extended_struct_vars = get_struct_vars(extended_struct_name)
             if token != "{":
                 raise_error("{")
             next_token()
-            const_block()
-            var_block()
+            const_list = const_block()
+            var_list = var_block()
+            struct_args = [const_list, var_list]
+            if extended_struct_vars is not None:
+                struct_args = [struct_args[0] + extended_struct_vars[0],
+                                struct_args[1] + extended_struct_vars[1]]
             if token == "}":
                 next_token()
             else:
@@ -622,7 +647,10 @@ def extends():
         if token == "struct":
             next_token()
             if token == "id":
+                extended_struct_id = get_token_name()
                 next_token()
+                return extended_struct_id
+    return None
 
 def const_block():
     if token == "const":
@@ -742,7 +770,7 @@ def const_decl():
         const_value = const_list()
         if const_value is not None:
             if not is_type_correct(const_type, const_value["value"], const_value["general_type"]):
-                print("Erro: declaração de constante com tipo inválido.")
+                raise_semantic_error("Erro: declaração de constante com tipo inválido.")
             ide_table[const_name] = {"type": const_type, "class": "const"}
     elif token in first_Typedef:
         typedef()
