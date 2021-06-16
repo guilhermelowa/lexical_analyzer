@@ -245,7 +245,7 @@ sync_words = ["start", "procedure", "function", "if", "then", "while", "print", 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-ide_table = {}
+ide_table = {}   # type [int, real], class [var, var], scope [global, local]
 func_table = {}  # nome, tipos, parametros,
 type_buffer = []
 typedef_table = {}
@@ -280,6 +280,25 @@ def get_num_type(num):
         return "real"
     else:
         return "int"
+
+def compare_types(arg1, arg2):
+    type_arg1 = get_arg_type(arg1)
+    type_arg2 = get_arg_type(arg2)
+
+    if type_arg1 is None:
+        return arg2
+    if type_arg2 is None:
+        return arg1
+    if type_arg1 != type_arg2:
+        print_arg1 = arg1
+        print_arg2 = arg2
+        if isinstance(arg1, dict):
+            print_arg1 = arg1["value"]
+        if isinstance(arg2, dict):
+            print_arg2 = arg2["value"]
+        raise_semantic_error(f'Valor {print_arg1} [{type_arg1}]\
+ não é do mesmo tipo de valor {print_arg2} [{type_arg2}]')
+    return arg1
 
 def is_type_correct(expected_type, value, value_general_type):
     if value_general_type == "num":
@@ -337,19 +356,23 @@ def get_args_types(func_args):
         args_type_list.append(get_arg_type(arg))
     return args_type_list
 
+def isfunc(func_id):
+    if func_id not in func_table.keys():
+        raise_semantic_error(f"Função {func_id} não declarada")
+        return False
+    return True
+
 def check_func_params(func_id, func_params):
     func_params = get_args_types(func_params)
     idx = 0
 
     if func_id is not None:
-        if func_id in func_table.keys():
+        if isfunc(func_id):
             if func_params not in func_table[func_id]["params"]:
                 raise_semantic_error(f"Função {func_id} não recebe os argumentos {func_params}")
             else:
                 idx = func_table[func_id]["params"].index(func_params)
             return func_table[func_id]["return"][idx]
-        else:
-            raise_semantic_error(f"Função {func_id} não declarada")
 
 def test_func_list():
     for i in func_list:
@@ -1063,13 +1086,14 @@ def var_stm():
         stm_scope()
     elif token == "id":
         var_name = get_token_name()
-        next_token()
-        var_value = stm_id(var_name)
+
         if not var_name in ide_table:
             raise_semantic_error(f"Variável {var_name} não instanciada")
-        elif ide_table[var_name]["class"] == "const":
-            raise_semantic_error(f"Variável {var_name} é uma constante.\
-                \nNão é possível atribuir valores a uma constante")
+            
+        next_token()
+        right_lexema = stm_id(var_name)
+        compare_types(var_name, right_lexema)
+        
         # elif not is_type_correct(ide_table[var_name]["type"], var_value["value"], var_value["general_type"]):
         #     print("Erro: atribuição de variável com tipo errado")
     elif token in first_StmCmd:
@@ -1077,8 +1101,14 @@ def var_stm():
     else:
         raise_error(first_VarStm, follow_VarStm)
 
-def stm_id(func_id=None):
+def check_const_assign(var_name):
+    if ide_table[var_name]["class"] == "const":
+        raise_semantic_error(f"Variável {var_name} é uma constante.\
+            \nNão é possível atribuir valores a uma constante")
+
+def stm_id(lexema=None):
     if token in first_Assign:
+        check_const_assign(lexema)
         token_value = assign()
         return token_value
     elif token in first_Array:
@@ -1094,7 +1124,7 @@ def stm_id(func_id=None):
         func_args = []
         next_token()
         func_args = args()
-        check_func_params(func_id, func_args)
+        check_func_params(lexema, func_args)
         if token != ")":
             raise_error(")", follow_StmId)
         next_token()
@@ -1131,25 +1161,6 @@ def stm_cmd():
                 raise_error(";", follow_StmCmd)
     else:
         raise_error(first_StmCmd, follow_StmCmd)
-
-def compare_types(arg1, arg2):
-    type_arg1 = get_arg_type(arg1)
-    type_arg2 = get_arg_type(arg2)
-
-    if type_arg1 is None:
-        return arg2
-    if type_arg2 is None:
-        return arg1
-    if type_arg1 != type_arg2:
-        print_arg1 = arg1
-        print_arg2 = arg2
-        if isinstance(arg1, dict):
-            print_arg1 = arg1["value"]
-        if isinstance(arg2, dict):
-            print_arg2 = arg2["value"]
-        raise_semantic_error(f'Valor {print_arg1} [{type_arg1}]\
- não é do mesmo tipo de valor {print_arg2} [{type_arg2}]')
-    return arg1
 
 def expr():
     if token in first_Or:
