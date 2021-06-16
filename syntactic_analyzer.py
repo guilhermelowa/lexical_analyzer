@@ -259,6 +259,11 @@ def get_token_name():
     return tokens[tokens_position][2]
 
 def raise_semantic_error(msg):
+    full_msg = f"Erro linha {tokens[tokens_position][0]}\n"
+    if msg[-1] != "\n":
+        msg += "\n"
+    
+    full_msg += msg
     print(msg)
     semantic_output_file.write(msg)
 
@@ -306,6 +311,8 @@ def append_func_params(params):
     func_list[-1]["params"] = params
 
 def get_arg_type(arg):
+    if arg is None:
+        return None
     available_types = get_available_types()
     if arg in available_types:
         return arg
@@ -1059,9 +1066,10 @@ def var_stm():
         next_token()
         var_value = stm_id(var_name)
         if not var_name in ide_table:
-            print("Erro: variável não instanciada")
+            raise_semantic_error(f"Variável {var_name} não instanciada")
         elif ide_table[var_name]["class"] == "const":
-            print("Erro: não é possível atribbuir valores a uma constante")
+            raise_semantic_error(f"Variável {var_name} é uma constante.\
+                \nNão é possível atribuir valores a uma constante")
         # elif not is_type_correct(ide_table[var_name]["type"], var_value["value"], var_value["general_type"]):
         #     print("Erro: atribuição de variável com tipo errado")
     elif token in first_StmCmd:
@@ -1124,6 +1132,25 @@ def stm_cmd():
     else:
         raise_error(first_StmCmd, follow_StmCmd)
 
+def compare_types(arg1, arg2):
+    type_arg1 = get_arg_type(arg1)
+    type_arg2 = get_arg_type(arg2)
+
+    if type_arg1 is None:
+        return arg2
+    if type_arg2 is None:
+        return arg1
+    if type_arg1 != type_arg2:
+        print_arg1 = arg1
+        print_arg2 = arg2
+        if isinstance(arg1, dict):
+            print_arg1 = arg1["value"]
+        if isinstance(arg2, dict):
+            print_arg2 = arg2["value"]
+        raise_semantic_error(f'Valor {print_arg1} [{type_arg1}]\
+ não é do mesmo tipo de valor {print_arg2} [{type_arg2}]')
+    return arg1
+
 def expr():
     if token in first_Or:
         return or_func()
@@ -1131,94 +1158,106 @@ def expr():
         raise_error(first_Expr, follow_Expr)
 
 def or_func():
-    return_id = None
     if token in first_And:
-        token_value = and_func()
-        or_()
-        return token_value
+        lexema1 = and_func()
+        lexema2 = or_()
+        lexema1 = compare_types(lexema1, lexema2)
+        return lexema1
     else:
         raise_error(first_Or, follow_Or)
 
 def or_():
     if token == "||":
         next_token()
-        and_func()
-        or_()
+        lexema1 = and_func()
+        lexema2 = or_()
+        lexema1 = compare_types(lexema1, lexema2)
+        return lexema1
 
 def and_func():
-    return_id = None
     if token in first_Equate:
-        token_value = equate()
-        and_()
-        return token_value
+        lexema1 = equate()
+        lexema2 = and_()
+        lexema1 = compare_types(lexema1, lexema2)
+        return lexema1
     else:
         raise_error(first_And, follow_And)
 
 def and_():
     if token == "&&":
         next_token()
-        equate()
-        and_()
+        lexema1 = equate()
+        lexema2 = and_()
+        lexema1 = compare_types(lexema1, lexema2)
+        return lexema1
 
 def equate():
-    return_id = None
     if token in first_Compare:
-        token_value = compare()
-        equate_()
-        return token_value 
+        lexema1 = compare()
+        lexema2 = equate_()
+        lexema1 = compare_types(lexema1, lexema2)
+        return lexema1
     else:
         raise_error(first_Equate, follow_Equate)
 
 def equate_():
     if token == "==" or token == "!=":
         next_token()
-        compare()
-        equate_()
+        lexema1 = compare()
+        lexema2 = equate_()
+        lexema1 = compare_types(lexema1, lexema2)
+        return lexema1
 
 def compare():
-    return_id = None
     if token in first_Add:
-        token_value = add_func()
-        compare_()
-        return token_value
+        lexema1 = add_func()
+        lexema2 = compare_()
+        lexema1 = compare_types(lexema1, lexema2)
+        return lexema1
     else:
         raise_error(first_Compare, follow_Compare)
 
 def compare_():
     if token == "<" or token == ">" or token == "<=" or token == ">=":
         next_token()
-        add_func()
-        compare_()
+        lexema1 = add_func()
+        lexema2 = compare_()
+        lexema1 = compare_types(lexema1, lexema2)
+        return lexema1
 
 def add_func():
-    return_id = None
     if token in first_Mult:
-        token_value = mult()
-        add_()
-        return token_value
+        lexema1 = mult()
+        lexema2 = add_()
+        lexema1 = compare_types(lexema1, lexema2)
+        return lexema1
     else:
         raise_error(first_Add, follow_Add)
 
 def add_():
     if token == "+" or token == "-":
         next_token()
-        mult()
-        add_()
+        lexema1 = mult()
+        lexema2 = add_()
+        lexema1 = compare_types(lexema1, lexema2)
+        return lexema1
 
 def mult():
-    return_id = None
     if token in first_Unary:
-        token_value = unary()
-        mult_()
-        return token_value
+        lexema1 = unary()
+        lexema2 = mult_()
+        lexema1 = compare_types(lexema1, lexema2)
+        return lexema1
     else:
         raise_error(first_Mult, follow_Mult)
 
 def mult_():
     if token == "*" or token == "/":
         next_token()
-        unary()
-        mult_()
+        lexema1 = unary()
+        lexema2 = mult_()
+        lexema1 = compare_types(lexema1, lexema2)
+        return lexema1
 
 def unary():
     if token == "!":
@@ -1244,20 +1283,21 @@ def value():
         return lexema
     elif token == "(":
         next_token()
-        expr()
+        lexema1 = expr()
         if token == ")":
             next_token()
+            return lexema1
         else:
             raise_error(")", follow_Value)
     else:
         raise_error(first_Value, follow_Value)
 
-def id_value(func_id=None):
-    returned_type = func_id
+def id_value(lexema=None):
+    returned_type = lexema
     if token == "(":
         next_token()
         func_params = args()
-        returned_type = check_func_params(func_id, func_params)
+        returned_type = check_func_params(lexema, func_params)
         if token == ")":
             next_token()
         else:
