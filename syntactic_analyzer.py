@@ -346,7 +346,7 @@ def get_arg_type(arg):
     if arg in ide_table.keys():
         return ide_table[arg]["type"]
     raise_semantic_error(f'Variável {arg}\
-        usada como parâmetro não foi declarada')
+        usada como parâmetro não foi declarada') #TODO Talvez seja melhor verificar esse erro fora, ele ta aparecendo em funcao n declarada
     return None
 
 def get_args_types(func_args):
@@ -404,6 +404,17 @@ def append_struct(struct_name):
     #    string c = "ola Mundo"
     # }
     struct_table["struct_" + struct_name] = None
+# - - - - - - - - - - - - - - -  Consts e Vars - - - - - - - - - - - - - - -
+
+def check_const_assign(var_name):
+    if var_name in ide_table:
+        if ide_table[var_name]["class"] == "const":
+            raise_semantic_error(f"Variável {var_name} é uma constante.\
+                \nNão é possível atribuir valores a uma constante")
+
+def check_variable_exists(var_name):
+    if not var_name in ide_table:
+        raise_semantic_error(f"Variável {var_name} não instanciada")
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1101,16 +1112,6 @@ def var_stm():
         stm_cmd()
     else:
         raise_error(first_VarStm, follow_VarStm)
-
-def check_const_assign(var_name):
-    if var_name in ide_table:
-        if ide_table[var_name]["class"] == "const":
-            raise_semantic_error(f"Variável {var_name} é uma constante.\
-                \nNão é possível atribuir valores a uma constante")
-
-def check_variable_exists(var_name):
-    if not var_name in ide_table:
-        raise_semantic_error(f"Variável {var_name} não instanciada")
 
 def stm_id(lexema=None):
     if token in first_Assign:
