@@ -1183,7 +1183,8 @@ def or_func():
     if token in first_And:
         lexema1 = and_func()
         lexema2 = or_()
-        lexema1 = compare_types(lexema1, lexema2)
+        if lexema2 is not None:
+            return "boolean"
         return lexema1
     else:
         raise_error(first_Or, follow_Or)
@@ -1193,14 +1194,17 @@ def or_():
         next_token()
         lexema1 = and_func()
         lexema2 = or_()
-        lexema1 = compare_types(lexema1, lexema2)
+        if lexema2 is not None:
+            return "boolean"
         return lexema1
+    return None
 
 def and_func():
     if token in first_Equate:
         lexema1 = equate()
         lexema2 = and_()
-        lexema1 = compare_types(lexema1, lexema2)
+        if lexema2 is not None:
+            return "boolean"
         return lexema1
     else:
         raise_error(first_And, follow_And)
@@ -1210,8 +1214,10 @@ def and_():
         next_token()
         lexema1 = equate()
         lexema2 = and_()
-        lexema1 = compare_types(lexema1, lexema2)
+        if lexema2 is not None:
+            return "boolean"
         return lexema1
+    return None
 
 def equate():
     if token in first_Compare:
@@ -1227,8 +1233,10 @@ def equate_():
         next_token()
         lexema1 = compare()
         lexema2 = equate_()
-        lexema1 = compare_types(lexema1, lexema2)
+        if lexema2 is not None:
+            return "boolean"
         return lexema1
+    return None
 
 def compare():
     if token in first_Add:
@@ -1244,8 +1252,10 @@ def compare_():
         next_token()
         lexema1 = add_func()
         lexema2 = compare_()
-        lexema1 = compare_types(lexema1, lexema2)
+        if lexema2 is not None:
+            return "boolean"
         return lexema1
+    return None
 
 def add_func():
     if token in first_Mult:
@@ -1263,6 +1273,7 @@ def add_():
         lexema2 = add_()
         lexema1 = compare_types(lexema1, lexema2)
         return lexema1
+    return None
 
 def mult():
     if token in first_Unary:
@@ -1280,11 +1291,12 @@ def mult_():
         lexema2 = mult_()
         lexema1 = compare_types(lexema1, lexema2)
         return lexema1
+    return None
 
 def unary():
     if token == "!":
         next_token()
-        unary()
+        return unary()
     elif token in first_Value:
         return value()
     else:
@@ -1331,74 +1343,107 @@ def id_value(lexema=None):
 
 def log_expr():
     if token in first_LogOr:
-        log_or()
+        token_value = get_arg_type(log_or())
+        if token_value != "boolean":
+            raise_semantic_error("Expressão lógica não possui valor booleano")
+        return token_value
     else:
         raise_error(first_LogExpr, follow_LogExpr)
 
 def log_or():
     if token in first_LogAnd:
-        log_and()
-        log_or_()
+        lexema1 = log_and()
+        lexema2 = log_or_()
+        if lexema2 is not None:
+            return "boolean"
+        return lexema1
     else:
         raise_error(first_LogOr, follow_LogOr)
 
 def log_or_():
     if token == "||":
         next_token()
-        log_and()
-        log_or_()
+        lexema1 = log_and()
+        lexema2 = log_or_()
+        if lexema2 is not None:
+            return "boolean"
+        return lexema1
+    return None
 
 def log_and():
     if token in first_LogEquate:
-        log_equate()
-        log_and_()
+        lexema1 = log_equate()
+        lexema2 = log_and_()
+        if lexema2 is not None:
+            return "boolean"
+        return lexema1
     else:
         raise_error(first_LogAnd, follow_LogAnd)
 
 def log_and_():
     if token == "&&":
         next_token()
-        log_equate()
-        log_and_()
+        lexema1 = log_equate()
+        lexema2 = log_and_()
+        if lexema2 is not None:
+            return "boolean"
+        return lexema1
+    return None
 
 def log_equate():
     if token in first_LogCompare:
-        log_compare()
-        log_equate_()
+        lexema1 = log_compare()
+        lexema2 = log_equate_()
+        if lexema2 is not None:
+            return "boolean"
+        return lexema1
     else:
         raise_error(first_LogEquate, follow_LogEquate)
 
 def log_equate_():
     if token == "==" or token == "!=":
         next_token()
-        log_compare()
-        log_equate_()
+        lexema1 = log_compare()
+        lexema2 = log_equate_()
+        if lexema2 is not None:
+            return "boolean"
+        return lexema1
+    return None
 
 def log_compare():
     if token in first_LogUnary:
-        log_unary()
-        log_compare_()
+        lexema1 = log_unary()
+        lexema2 = log_compare_()
+        if lexema2 is not None:
+            return "boolean"
+        return lexema1
     else:
         raise_error(first_LogCompare, follow_LogCompare)
 
 def log_compare_():
     if token == "<" or token == ">" or token == "<=" or token == ">=":
         next_token()
-        log_unary()
-        log_compare_()
+        lexema1 = log_unary()
+        lexema2 = log_compare_()
+        if lexema2 is not None:
+            return "boolean"
+        return lexema1
+    return None
 
 def log_unary():
     if token == "!":
         next_token()
-        log_unary()
+        return log_unary()
     elif token in first_LogValue:
-        log_value()
+        return log_value()
     else:
         raise_error(first_LogUnary, follow_LogUnary)
 
 def log_value():
     if token == "num" or token == "str" or token == "true" or token == "false":
+        token_value = {"value": tokens[tokens_position][2], "general_type": token}
         next_token()
+        return token_value
     elif token == "local" or token == "global":
         next_token()
         access()
@@ -1409,9 +1454,10 @@ def log_value():
         return lexema
     elif token == "(":
         next_token()
-        log_expr()
+        lexema1 = log_expr()
         if token == ")":
             next_token()
+            return lexema1
         else:
             raise_error(")", follow_LogValue)
     else:
