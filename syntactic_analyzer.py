@@ -1308,7 +1308,8 @@ def func_normal_stm():
         next_token()
     elif token == "return":
         next_token()
-        expr()
+        token_value = expr()
+        compare_types(func_list[-1]["return"], token_value)
         if token == ";":
             next_token()
         else:
