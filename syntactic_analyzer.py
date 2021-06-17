@@ -441,9 +441,7 @@ def append_ide(ide_name, ide_type, ide_class):
     current_scope = get_current_scope()
     if ide_name in ide_table:
         occupied_scopes = ide_table[ide_name]["scope"]
-        if "global" in occupied_scopes:
-            raise_semantic_error(f"Já existe um identificador com o nome {ide_name} no escopo global")
-        elif current_scope in occupied_scopes:
+        if current_scope in occupied_scopes:
             raise_semantic_error(f"Já existe um identificador com o nome {ide_name} no escopo {current_scope}")
         else:
             ide_table[ide_name]["scope"].append(get_current_scope())
