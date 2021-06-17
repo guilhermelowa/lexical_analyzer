@@ -297,8 +297,8 @@ def get_num_type(num):
     else:
         return "int"
 
-def compare_types(arg1, arg2):
-    type_arg1 = get_arg_type(arg1)
+def compare_types(arg1, arg2, type_flag="None"):
+    type_arg1 = get_arg_type(arg1, type_flag)
     type_arg2 = get_arg_type(arg2)
 
     if type_arg1 is None:
@@ -354,7 +354,7 @@ def get_type(var_name, type_flag):
     else:
         scope = get_scope()
     if scope in ide_table[var_name]["scope"]:
-        class_index = ide_table[var_name]["scope"].index(get_scope())
+        class_index = ide_table[var_name]["scope"].index(scope)
         return ide_table[var_name]["type"][class_index]
     return "int" #TODO Remover valor padrão
 
@@ -1322,6 +1322,7 @@ def var_stm():
     if token in first_StmScope:
         scope_tag, var_name, right_lexema = stm_scope()
         #TODO Comparar tipos, colocar tipos na hora de append ide
+        compare_types(var_name, right_lexema, scope_tag)
         print(var_name)
     elif token == "id":
         var_name = get_token_name()
@@ -1373,6 +1374,7 @@ def stm_scope():
         var_name = access()
         accesses()
         right_lexema = assign()
+        compare_types(var_name, right_lexema, scope_tag)
         return scope_tag, var_name, right_lexema
     else:
         raise_error(first_StmScope, follow_StmScope)
@@ -1530,8 +1532,10 @@ def value():
         next_token()
         return token_value
     elif token == "local" or token == "global":
+        type_flag = token
         next_token()
-        access()
+        token_value = access()
+        return get_arg_type(token_value, type_flag)
     elif token == "id":
         lexema = get_token_name()
         next_token()
