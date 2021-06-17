@@ -302,8 +302,8 @@ def get_num_type(num):
     else:
         return "int"
 
-def compare_types(arg1, arg2):
-    type_arg1 = get_arg_type(arg1)
+def compare_types(arg1, arg2, type_flag="None"):
+    type_arg1 = get_arg_type(arg1, type_flag)
     type_arg2 = get_arg_type(arg2)
 
     if type_arg1 is None:
@@ -352,7 +352,18 @@ def append_func(return_type="None", name=None):
 def append_func_params(params):
     func_list[-1]["params"] = params
 
-def get_arg_type(arg):
+def get_type(var_name, type_flag):
+    scope = ""
+    if type_flag == "global":
+        scope = "global"
+    else:
+        scope = get_scope()
+    if scope in ide_table[var_name]["scope"]:
+        class_index = ide_table[var_name]["scope"].index(scope)
+        return ide_table[var_name]["type"][class_index]
+    return "int" #TODO Remover valor padrão
+
+def get_arg_type(arg, type_flag="local"):
     if arg is None:
         return None
     available_types = get_available_types()
@@ -367,7 +378,7 @@ def get_arg_type(arg):
         if general_type == "true" or general_type == "false":
             return "boolean"
     if arg in ide_table.keys():
-        return ide_table[arg]["type"]
+        return get_type(arg, type_flag)
     # TODO: Adicionar retorno da função, caso arg seja uma função.
     # Arg precisa conter, além do nome da função, os argumentos, por causa da sobrecarga.
     # Pode usar check_func_params tb
@@ -491,7 +502,7 @@ def check_variable_exists(var_name):
     if not var_name in ide_table:
         raise_semantic_error(f"Variável {var_name} não instanciada")
 
-def append_ide(ide_name, ide_type, ide_class):
+def append_ide(ide_name, type_, class_):
     current_scope = get_scope()
     if ide_name in ide_table:
         occupied_scopes = ide_table[ide_name]["scope"]
@@ -499,10 +510,10 @@ def append_ide(ide_name, ide_type, ide_class):
             raise_semantic_error(f"Já existe um identificador com o nome {ide_name} no escopo {current_scope}")
         else:
             ide_table[ide_name]["scope"].append(current_scope)
-            ide_table[ide_name]["class"].append(ide_class)
-            #TODO Colocar tipo na lista de variaveis
+            ide_table[ide_name]["class"].append(class_)
+            ide_table[ide_name]["type"].append(type_)
     else:
-        ide_table[ide_name] = {"type": ide_type, "class": [ide_class], "scope": [current_scope]}
+        ide_table[ide_name] = {"type": type_, "class": [class_], "scope": [current_scope]}
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -895,10 +906,14 @@ def add_ide(type_, name, dimension, class_):
     scope = get_scope()
     if iside(name):
         # TODO: Check if same scope already exists
-        ide_table[name]["type"].append(type_)
-        ide_table[name]["dimension"].append(dimension)
-        ide_table[name]["scope"].append(scope)
-        ide_table[name]["class"].append(class_)
+        if scope in ide_table[name]["scope"]:
+            scope_name = scope if scope == "global" else scope["name"]
+            raise_semantic_error(f"Já existe um identificador com o nome {name} no escopo {scope_name}")
+        else:
+            ide_table[name]["type"].append(type_)
+            ide_table[name]["dimension"].append(dimension)
+            ide_table[name]["scope"].append(scope)
+            ide_table[name]["class"].append(class_)
     else:
         ide_table[name] = {"type": [type_],
                         "dimension": [dimension],
@@ -1089,8 +1104,10 @@ def access():
     if token == ".":
         next_token()
         if token == "id":
+            var_name = get_token_name()
             next_token()
             arrays()
+            return var_name
         else:
             raise_error("IDENTIFICADOR", follow_Access)
     else:
@@ -1312,7 +1329,10 @@ def func_normal_stm():
 
 def var_stm():
     if token in first_StmScope:
-        stm_scope()
+        scope_tag, var_name, right_lexema = stm_scope()
+        #TODO Comparar tipos, colocar tipos na hora de append ide
+        compare_types(var_name, right_lexema, scope_tag)
+        print(var_name)
     elif token == "id":
         var_name = get_token_name()
         next_token()
@@ -1358,10 +1378,13 @@ def stm_id(lexema=None):
 
 def stm_scope():
     if token == "local" or token == "global":
+        scope_tag = token
         next_token()
-        access()
+        var_name = access()
         accesses()
-        assign()
+        right_lexema = assign()
+        compare_types(var_name, right_lexema, scope_tag)
+        return scope_tag, var_name, right_lexema
     else:
         raise_error(first_StmScope, follow_StmScope)
 
@@ -1518,8 +1541,10 @@ def value():
         next_token()
         return token_value
     elif token == "local" or token == "global":
+        type_flag = token
         next_token()
-        access()
+        token_value = access()
+        return get_arg_type(token_value, type_flag)
     elif token == "id":
         lexema = get_token_name()
         next_token()
