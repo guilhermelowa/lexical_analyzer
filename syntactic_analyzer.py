@@ -1,4 +1,5 @@
 import os
+import lexical_analyzer
 
 
 # First & Follow
@@ -253,6 +254,7 @@ struct_list = []
 func_list = []  # nome, tipos, parametros,
 func_table = {}  # nome, tipos, parametros,
 global_scope = "global"
+semantic_errors = 0
 
 # - - - - - - - - - - - - - - - General - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -261,6 +263,9 @@ def get_token_name():
     return tokens[tokens_position][2]
 
 def raise_semantic_error(msg):
+    global semantic_errors
+    semantic_errors += 1
+
     full_msg = f"Erro linha {tokens[tokens_position][0]}\n"
     if msg[-1] != "\n":
         msg += "\n"
@@ -564,16 +569,20 @@ def raise_error(expected_token, sync_list=None):
     if sync_list is not None:
         recover_from_error(sync_list)
 
-def success():
-    global fout, errors_count
-    if errors_count == 0:
-        msg = 'Análise Sintática concluída com sucesso!\n'
+def success_msg(file_, errors, analysis_type):
+    if errors == 0:
+        msg = f'Análise {analysis_type} concluída com sucesso!\n'
         print(msg)
-        fout.write(msg)
+        file_.write(msg)
     else:
-        msg = f'Análise Sintática concluída com {errors_count} erros\n'
+        msg = f'Análise {analysis_type} concluída com {errors} erros\n'
         print(msg)
-        fout.write(msg)
+        file_.write(msg)
+
+def success():
+    global fout, errors_count, semantic_errors, semantic_output_file
+    success_msg(fout, errors_count, "Sintática")
+    success_msg(semantic_output_file, semantic_errors, "Semântica")
 
 def sync_function(sync_list, normal_flow=True):
     global tokens, tokens_position
@@ -762,9 +771,9 @@ def type_func():
     elif token == "struct":
         next_token()
         if token == "id":
-            token_type = tokens[tokens_position][2]
+            token_type = get_token_name()
             next_token()
-            return "struct_" + token_type
+            return token_type
     else:
         raise_error(first_Type, follow_Type)
 
@@ -806,7 +815,7 @@ def var_decl():
             raise_error(";", follow_VarDecl)
         else:
             next_token()
-            return [(var_type, name, list_var, list_dimensions[i]) for i, name in enumerate(list_var)]
+            return [(var_type, name, list_dimensions[i]) for i, name in enumerate(list_var)]
     elif token in first_Typedef:
         typedef()
         return []
@@ -821,7 +830,7 @@ def var_decl():
 
         list_var, list_dimensions = var_id()
         add_ides(var_type, list_var, list_dimensions, "var")
-        return [(var_type, name, list_var, list_dimensions[i]) for i, name in enumerate(list_var)]
+        return [(var_type, name, list_dimensions[i]) for i, name in enumerate(list_var)]
     else:
         raise_error(first_VarDecl, follow_VarDecl)
 
