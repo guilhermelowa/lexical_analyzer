@@ -347,16 +347,7 @@ def append_func(return_type="None", name=None):
 def append_func_params(params):
     func_list[-1]["params"] = params
 
-def get_type(var_name, type_flag):
-    scope = ""
-    if type_flag == "global":
-        scope = "global"
-    else:
-        scope = get_scope()
-    if scope in ide_table[var_name]["scope"]:
-        class_index = ide_table[var_name]["scope"].index(scope)
-        return ide_table[var_name]["type"][class_index]
-    return "int" #TODO Remover valor padrão
+
 
 def get_arg_type(arg, type_flag="local"):
     if arg is None:
@@ -478,18 +469,24 @@ def append_struct(struct_name, var_list=None):
         struct_table[struct_name] = var_list
 
 # - - - - - - - - - - - - - - -  Consts e Vars - - - - - - - - - - - - - - -
-def get_class(var_name):
+def get_class(var_name, scope_flag="local"):
     # TODO: Consertar tipo fixo
-    scope = get_scope()
+    scope = "global" if scope_flag == "global" else get_scope()
     if scope in ide_table[var_name]["scope"]:
-        class_index = ide_table[var_name]["scope"].index(get_scope())
+        class_index = ide_table[var_name]["scope"].index(scope)
         return ide_table[var_name]["class"][class_index]
     return "var"
-#TODO Get Type
 
-def check_const_assign(var_name):
+def get_type(var_name, type_flag):
+    scope = "global" if type_flag == "global" else get_scope()
+    if scope in ide_table[var_name]["scope"]:
+        class_index = ide_table[var_name]["scope"].index(scope)
+        return ide_table[var_name]["type"][class_index]
+    return "int" #TODO Remover valor padrão
+
+def check_const_assign(var_name, scope_flag="local"):
     if var_name in ide_table:
-        if get_class(var_name) == "const":
+        if get_class(var_name, scope_flag) == "const":
             raise_semantic_error(f"Variável {var_name} é uma constante.\
                 \nNão é possível atribuir valores a uma constante")
 
@@ -826,7 +823,7 @@ def var_decl():
         return []
     elif token == "id":
         var_type = get_token_name()
-        if not istype(var_type):
+        if not istype(var_type) and var_type not in ide_table:
             raise_semantic_error(f"Tipo {var_type} não foi declarado")
         next_token()
 
@@ -1320,9 +1317,10 @@ def func_normal_stm():
 
 def var_stm():
     if token in first_StmScope:
-        scope_tag, var_name, right_lexema = stm_scope()
+        scope_flag, var_name, right_lexema = stm_scope()
+        check_const_assign(var_name, scope_flag)
         #TODO Comparar tipos, colocar tipos na hora de append ide
-        compare_types(var_name, right_lexema, scope_tag)
+        compare_types(var_name, right_lexema, scope_flag)
         print(var_name)
     elif token == "id":
         var_name = get_token_name()
