@@ -245,12 +245,14 @@ sync_words = ["start", "procedure", "function", "if", "then", "while", "print", 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-ide_table = {}   # type [int, real], class [var, var], scope [global, local]
-func_table = {}  # nome, tipos, parametros,
+ide_table = {}   # type, class, scope, dimensions
 type_buffer = []
 typedef_table = {}
-struct_table = {}
+struct_table = {}  #key: name,  value: [(type, name, dimension), ...]
+struct_list = []
 func_list = []  # nome, tipos, parametros,
+func_table = {}  # nome, tipos, parametros,
+global_scope = ""
 
 # - - - - - - - - - - - - - - - General - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -267,6 +269,17 @@ def raise_semantic_error(msg):
     print(full_msg) 
     semantic_output_file.write(full_msg)
 
+# - - - - - - - - - - - - - - - - - - - Scope - - - - - - - - - - - - - - - - - - - - - -
+
+def get_scope():
+    global global_scope
+    if global_scope == "struct":
+        return struct_list[-1]
+    if global_scope == "global":
+        return "global"
+    if global_scope == "func":
+        return func_list[-1]
+
 # - - - - - - - - - - - - - - - Type checking - - - - - - - - - - - - - - - - - - - - - -
 
 def get_available_types():
@@ -274,6 +287,9 @@ def get_available_types():
     struct_types = list(struct_table.keys())
     typedef_types = list(typedef_table.keys())
     return primitive_types + struct_types + typedef_types
+
+def istype(type_):
+    return type_ in get_available_types()
 
 def get_num_type(num):
     if "." in num:
@@ -316,12 +332,14 @@ def is_type_correct(expected_type, value, value_general_type):
 # - - - - - - - - - - - - - - - Typedef - - - - - - - - - - - - - - - - - - - - - -
 
 def add_typedef(primitive_type, new_type):
-    typedef_table = {new_type: primitive_type}
+    typedef_table[new_type] = primitive_type
 
 # - - - - - - - - - - - - - - - Functions - - - - - - - - - - - - - - - - - - - - - -
 
-def append_func(return_type="None"):
-    func_list.append({"name": tokens[tokens_position][2],
+def append_func(return_type="None", name=None):
+    if name is None:
+        name = tokens[tokens_position][2]
+    func_list.append({"name": name,
                     "params": [],
                     "return": return_type
     })
@@ -380,12 +398,48 @@ def check_func_params(func_id, func_params):
             return func_table[func_id]["return"][idx]
 
 def test_func_list():
+    print("Func List:")
     for i in func_list:
         print(i)
+    print("-")
 
 def test_func_table():
+    print("Func Table")
     for key in func_table.keys():
         print(key, func_table[key])
+    print("-")
+
+def test_struct_list():
+    print("Struct List:")
+    for i in struct_list:
+        print(i)
+    print("-")
+
+def test_struct_table():
+    print("Struct Table")
+    for key in struct_table.keys():
+        print(key, struct_table[key])
+    print("-")
+
+def test_ide_table():
+    print("Ide Table")
+    for key in ide_table.keys():
+        print(key, ide_table[key])
+    print("-")
+
+def test_typedef_table():
+    print("Typedef Table")
+    for key in typedef_table.keys():
+        print(key, typedef_table[key])
+    print("-")
+
+def test_tables():
+    test_typedef_table()
+    test_func_list()
+    test_func_table()
+    test_struct_list()
+    test_struct_table()
+    test_ide_table()
 
 def transform_func_list():
     for func in func_list:
@@ -400,22 +454,17 @@ def transform_func_list():
 # - - - - - - - - - - - - - - -  Structs - - - - - - - - - - - - - - -
 
 def append_struct(struct_name, var_list=None):
-    # TODO: Pegar os campos da struct e adicionar uma lista deles.
-    # Pode ser uma tupla com tipo e identificador. Por ex:
-    # [(int, a), (real, b), (string, c)]
-    # pra struct{
-    #    int a = 3
-    #    real b = 3.2
-    #    string c = "ola Mundo"
-    # }
-
-    # lista de listas:
-    # primeira lista, de constantes
-    # segunda de variáveis
+    # Format:
+    # [const_list, var_list]
+    # const / var_list format:
+    # [type, name, dimension] 
+    if struct_name not in struct_list:
+        struct_list.append(struct_name)
     if var_list is None:
         struct_table[struct_name] = None
         return
-
+    else:
+        struct_table[struct_name] = var_list
 
 # - - - - - - - - - - - - - - -  Consts e Vars - - - - - - - - - - - - - - -
 
@@ -573,16 +622,17 @@ def program():
         raise_error(first_Program)
 
 def structs():
+    global global_scope
+    global_scope = "struct"
     if token in first_StructBlock:
         struct_block()
         structs()
+    global_scope = "global"
 
 def start():
-    transform_func_list()
-    test_func_table()
-    check_func_params("testFunction", ["int", "real"])  # ok
-    check_func_params("testFunction", ["int", "int"])  # erro
     if token == "start":
+        append_func(name="start")
+        transform_func_list()
         next_token()
         if token != "(":
             raise_error("(")
@@ -591,10 +641,13 @@ def start():
             raise_error(")")
         next_token()
         func_block()
+        test_tables()
     else:
         raise_error("start", follow_StartBlock)
 
 def decls():
+    global global_scope
+    global_scope = "func"
     if token in first_Decl:
         decl()
         decls()
@@ -611,7 +664,7 @@ def get_struct_vars(struct_name):
     if struct_name in struct_table.keys():
         return struct_table[struct_name]
     else:
-        raise_semantic_error("Struct {struct_name} não foi definida")
+        raise_semantic_error(f"Struct {struct_name} não foi definida")
         return None
 
 def struct_block():
@@ -622,16 +675,18 @@ def struct_block():
             append_struct(struct_name)
             next_token()
             extended_struct_name = extends()
-            extended_struct_vars = get_struct_vars(extended_struct_name)
+            if extended_struct_name is not None:
+                extended_struct_vars = get_struct_vars(extended_struct_name)
             if token != "{":
                 raise_error("{")
             next_token()
-            const_list = const_block()
-            var_list = var_block()
+            const_list = unroll_const_decls_list(const_block())
+            var_list = unroll_const_decls_list(var_block())
             struct_args = [const_list, var_list]
-            if extended_struct_vars is not None:
+            if extended_struct_name is not None:
                 struct_args = [struct_args[0] + extended_struct_vars[0],
                                 struct_args[1] + extended_struct_vars[1]]
+            append_struct(struct_name, struct_args)
             if token == "}":
                 next_token()
             else:
@@ -658,10 +713,11 @@ def const_block():
         if token != "{":
             raise_error("{")
         next_token()
-        const_decls()
+        const_decls_list = const_decls()
         if token != "}":
             raise_error("}")
         next_token()
+        return const_decls_list
 
 def var_block():
     if token == "var":
@@ -669,10 +725,11 @@ def var_block():
         if token != "{":
             raise_error("{")
         next_token()
-        var_decls()
+        var_decls_list = var_decls()
         if token != "}":
             raise_error("}")
         next_token()
+        return var_decls_list
 
 def type_func():
     token_type = ""
@@ -706,40 +763,61 @@ def typedef():
         raise_error("typedef", follow_Typedef)
 
 def var_decls():
+    var_decls_list = []
     if token in first_VarDecl:
-        var_decl()
-        var_decls()
+        var_decls_list.append(var_decl())
+        var_decls_list += var_decls()
+    return var_decls_list
 
 def var_decl():
+    list_var = []
+    list_dimensions = []
     if token in first_Type:
-        var_type = type_func() #TODO Fazer verificacao atribuicao de tipos
-        var_name = var()
-        var_list()
-        ide_table[var_name] = {"type": var_type, "class": "var"}
+        var_type = type_func()
+        var_name, dimension = var()
+        append_const_list(list_var, list_dimensions, var_name, dimension)
+        var_names, dimensions = var_list()
+        append_const_list(list_var, list_dimensions, var_names, dimensions)
+        add_ides(var_type, var_names, dimensions, "var")
         if token != ";":
             raise_error(";", follow_VarDecl)
         else:
             next_token()
+            return [(var_type, name, list_var, list_dimensions[i]) for i, name in enumerate(list_var)]
     elif token in first_Typedef:
         typedef()
+        return []
     elif token in first_StmScope:
         stm_scope()
+        return []
     elif token == "id":
+        var_type = get_token_name()
+        if not istype(var_type):
+            raise_semantic_error(f"Tipo {var_type} não foi declarado")
         next_token()
-        var_id()
+
+        list_var, list_dimensions = var_id()
+        add_ides(var_type, list_var, list_dimensions, "var")
+        return [(var_type, name, list_var, list_dimensions[i]) for i, name in enumerate(list_var)]
     else:
         raise_error(first_VarDecl, follow_VarDecl)
 
 def var_id():
+    list_var = []
+    list_dimensions = []
     if token in first_Var:
-        var()
-        var_list()
+        var_name, dimension = var()
+        append_const_list(list_var, list_dimensions, var_name, dimension)
+        var_names, dimensions = var_list()
+        append_const_list(list_var, list_dimensions, var_names, dimensions)
         if token == ";":
             next_token()
+            return list_var, list_dimensions
         else:
             raise_error(";", follow_VarId)
     elif token in first_StmId:
-        stm_id()
+        stm_id()  # TODO: ??
+        return [], []
     else:
         raise_error(first_VarId, follow_VarId)
 
@@ -747,51 +825,117 @@ def var():
     if token == "id":
         var_name = get_token_name()
         next_token()
-        arrays()
-        return var_name
+        dimensions = arrays()
+        return var_name, dimensions
     else:
         raise_error("IDENTIFICADOR", follow_Var)
 
 def var_list():
+    list_var = []
+    list_dimensions = []
     if token == ",":
         next_token()
-        var()
-        var_list()
+        var_name, dimension = var()
+        append_const_list(list_var, list_dimensions, var_name, dimension)
+        var_names, dimensions = var_list()
+        append_const_list(list_var, list_dimensions, var_names, dimensions)
+    return list_var, list_dimensions
     
+def unroll_const_decls_list(const_decls_list):
+    var_list = []
+    for const_decl in const_decls_list:
+        for var in const_decl:
+            var_list.append(var)
+    return var_list
+
 def const_decls():
+    const_decls_list = []
     if token in first_ConstDecl:
-        const_decl()
-        const_decls()
+        const_decls_list.append(const_decl())
+        const_decls_list += const_decls()
+    return const_decls_list
+
+def iside(ide):
+    return ide in ide_table.keys()
+
+def add_ide(type_, name, dimension, class_):
+    scope = get_scope()
+    if iside(name):
+        # TODO: Check if same scope already exists
+        ide_table[name] = {"type": ide_table[name]["type"].append(type_),
+                        "dimension": ide_table[name]["dimension"].append(dimension),
+                        "scope": ide_table[name]["scope"].append(scope),
+                        "class": ide_table[name]["class"].append(class_)
+                        }
+    else:
+        ide_table[name] = {"type": [type_],
+                        "dimension": [dimension],
+                        "scope": [scope],
+                        "class": [class_]
+                        }
+
+def add_ides(type_, names, dimensions, class_):
+    if isinstance(names, list):
+        for i, name in enumerate(names):
+            add_ide(type_, name, dimensions[i], class_)
+    else:
+        add_ide(type_, names, dimensions, class_)
+
+def append_const_list(list_const, list_dimensions, name, dimension):
+    if isinstance(name, list):
+        list_const += name
+        list_dimensions += dimension
+    else:
+        list_const.append(name)
+        list_dimensions.append(dimension)
 
 def const_decl():
+    list_const = []
+    list_dimensions = []
     if token in first_Type:
         const_type = type_func()
-        const_name = const()
-        const_value = const_list()
-        if const_value is not None:
-            if not is_type_correct(const_type, const_value["value"], const_value["general_type"]):
-                raise_semantic_error("Erro: declaração de constante com tipo inválido.")
-            ide_table[const_name] = {"type": const_type, "class": "const"}
+        const_name, dimension = const()
+        append_const_list(list_const, list_dimensions, const_name, dimension)
+        expr_type, const_names, dimensions = const_list()
+        append_const_list(list_const, list_dimensions, const_names, dimensions)
+        const_type = compare_types(const_type, expr_type)
+        add_ides(const_type, list_const, list_dimensions, "const")
+        return [(const_type, name, list_dimensions[i]) for i, name in enumerate(list_const)]
+
     elif token in first_Typedef:
         typedef()
+        return []
     elif token in first_StmScope:
         stm_scope()
+        return []
     elif token == "id":
+        const_type = get_token_name()
+        if not istype(const_type):
+            raise_semantic_error(f"Tipo {const_type} não foi declarado")
         next_token()
-        const_id()
+
+        expr_type, const_names, const_dimensions = const_id()
+        const_type = compare_types(const_type, expr_type)
+        add_ides(const_type, const_names, const_dimensions, "const")
+        return [(const_type, name, dimensions[i]) for i, name in enumerate(const_names)]
     else:
         raise_error(first_ConstDecl, follow_ConstDecl)
 
 def const_id():
+    list_const = []
+    list_dimensions = []
     if token in first_Const:
-        const()
-        const_list()
+        const_name, dimension = const()
+        append_const_list(list_const, list_dimensions, const_name, dimension)
+        const_type, const_names, dimensions = const_list()
+        append_const_list(list_const, list_dimensions, const_names, dimensions)
         if token == ";":
             next_token()
+            return const_type, const_names, dimensions
         else:
             raise_error(";", follow_ConstId)
     elif token in first_StmId:
-        stm_id()
+        stm_id()  #TODO ??
     else:
         raise_error(first_ConstId, follow_ConstId)
 
@@ -799,21 +943,29 @@ def const():
     if token == "id":
         const_name = get_token_name()
         next_token()
-        arrays()
-        return const_name
+        dimensions = arrays()
+        return const_name, dimensions
     else:
         raise_error("IDENTIFICADOR", follow_Const)
 
 def const_list():
+    list_const = []
+    list_dimensions = []
     if token == ",":
         next_token()
-        const_list() #TODO tratar dos casos lista de constantes
+        const_name, dimension = const()
+        append_const_list(list_const, list_dimensions, const_name, dimension)
+        const_type, const_names, dimensions = const_list()
+        append_const_list(list_const, list_dimensions, const_names, dimensions)
+        return const_type, const_names, dimensions
+
     elif token == "=":
         next_token()
         token_value = decl_atribute()
+        token_type = get_arg_type(token_value)
         if token == ";":
             next_token()
-            return token_value
+            return token_type, [], []
         else:
             raise_error(";", follow_ConstList)
     else:
@@ -821,7 +973,7 @@ def const_list():
 
 def decl_atribute():
     if token in first_ArrayDecl:
-        array_decl()
+        array_decl()  # TODO: Array declaration
     elif token in first_Expr:
         token_value = expr()
         return token_value
@@ -863,6 +1015,7 @@ def array():
     if token != "]":
         raise_error("]")
     next_token()
+    return 1
 
 def index():
     if token in first_Expr:
@@ -870,9 +1023,11 @@ def index():
         compare_types(lexema, "int")
 
 def arrays():
+    dimensions = 0
     if token in first_Array:
-        array()
-        arrays()
+        dimensions += array()
+        dimensions += arrays()
+    return dimensions
 
 def assign():
     if token == "=":
