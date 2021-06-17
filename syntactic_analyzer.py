@@ -379,13 +379,10 @@ def get_arg_type(arg, type_flag="local"):
             return "boolean"
     if arg in ide_table.keys():
         return get_type(arg, type_flag)
-    # TODO: Adicionar retorno da função, caso arg seja uma função.
-    # Arg precisa conter, além do nome da função, os argumentos, por causa da sobrecarga.
-    # Pode usar check_func_params tb
-    # if arg in func_table.keys():
-
+    if arg in func_table.keys():
+        return func_table[arg]["return"][0]
     raise_semantic_error(f'Variável {arg}\
-        usada como parâmetro não foi declarada') #TODO Talvez seja melhor verificar esse erro fora, ele ta aparecendo em funcao n declarada
+ usada como parâmetro não foi declarada') 
     return None
 
 def get_args_types(func_args):
@@ -1009,10 +1006,9 @@ def const_list():
     elif token == "=":
         next_token()
         token_value = decl_atribute()
-        token_type = get_arg_type(token_value)
         if token == ";":
             next_token()
-            return token_type, [], []
+            return token_value, [], []
         else:
             raise_error(";", follow_ConstList)
     else:
@@ -1332,7 +1328,6 @@ def var_stm():
         scope_tag, var_name, right_lexema = stm_scope()
         #TODO Comparar tipos, colocar tipos na hora de append ide
         compare_types(var_name, right_lexema, scope_tag)
-        print(var_name)
     elif token == "id":
         var_name = get_token_name()
         next_token()

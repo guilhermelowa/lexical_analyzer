@@ -254,4 +254,5 @@ for filename in os.listdir(input_dir):
         files_written += 1
 
 print(f"Read {files_read} files\
- \nWrote {files_written} files")
+ \nWrote {files_written} files\
+ \nAnálise Léxica concluída\n")
