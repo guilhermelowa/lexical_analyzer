@@ -1188,22 +1188,20 @@ def param_type():
 
 def params():
     func_params = []
-    extra_params = []
     if token in first_Param:
         func_params.append(param())
-        extra_params = params_list()
-        func_params += extra_params
+        func_params += params_list()
         return func_params
 
 def param():
-    dimensions = ""
-    func_single_param = ""
     if token in first_ParamType:
-        func_single_param = param_type()
+        param_type_ = param_type()
         if token == "id":
+            param_name = get_token_name()
             next_token()
             dimensions = param_arrays()
-            return func_single_param + dimensions
+            add_ide(param_type_, param_name, dimensions, "var")
+            return (param_type_, dimensions)
         else:
             raise_error("IDENTIFICADOR", follow_Param)
     else:
@@ -1228,10 +1226,6 @@ def param_arrays():
         dimensions = 1
         next_token()
         dimensions += param_mult_arrays()
-    if dimensions == 0:
-        dimensions = ""
-    else:
-        dimensions = str(dimensions) + "d"
     return dimensions
 
 def param_mult_arrays():
