@@ -350,6 +350,18 @@ def append_func(return_type="None", name=None):
     })
 
 def append_func_params(params):
+    name = func_list[-1]["name"]
+    return_type = func_list[-1]["return"]
+    if name not in func_table.keys():
+        func_table[name] = {"params": [params],
+                            "return": [return_type]}
+    else:
+        if params in func_table[name]["params"]:
+            raise_semantic_error(f"Função {name} com parâmetros {params} já foi declarada")
+            func_list.pop()
+            return
+        func_table[name]["params"].append(params)
+        func_table[name]["return"].append(return_type)
     func_list[-1]["params"] = params
 
 def get_type(var_name, type_flag):
@@ -454,15 +466,6 @@ def test_tables():
     test_struct_table()
     test_ide_table()
 
-def transform_func_list():
-    for func in func_list:
-        name = func["name"]
-        if name not in func_table.keys():
-            func_table[name] = {"params": [func["params"]],
-                                "return": [func["return"]]}
-        else:
-            func_table[name]["params"].append(func["params"])
-            func_table[name]["return"].append(func["return"])
 
 # - - - - - - - - - - - - - - -  Structs - - - - - - - - - - - - - - -
 
@@ -671,7 +674,6 @@ def structs():
 def start():
     if token == "start":
         append_func(name="start")
-        transform_func_list()
         next_token()
         if token != "(":
             raise_error("(")
@@ -902,9 +904,8 @@ def add_ide(type_, name, dimension, class_):
     global ide_table
     scope = get_scope()
     if iside(name):
-        # TODO: Check if same scope already exists
         if scope in ide_table[name]["scope"]:
-            scope_name = scope if scope == "global" else scope["name"]
+            scope_name = scope if scope == "global" else scope["name"]  # get function or struct name
             raise_semantic_error(f"Já existe um identificador com o nome {name} no escopo {scope_name}")
         else:
             ide_table[name]["type"].append(type_)
