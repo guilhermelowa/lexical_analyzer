@@ -474,13 +474,24 @@ def append_struct(struct_name, var_list=None):
         struct_table[struct_name] = var_list
 
 # - - - - - - - - - - - - - - -  Consts e Vars - - - - - - - - - - - - - - -
-def get_class(var_name, scope_flag="local"):
-    # TODO: Consertar tipo fixo
-    scope = "global" if scope_flag == "global" else get_scope()
-    if scope in ide_table[var_name]["scope"]:
-        class_index = ide_table[var_name]["scope"].index(scope)
-        return ide_table[var_name]["class"][class_index]
-    return "var"
+def get_class(var_name, scope_flag=None):
+    if scope_flag is not None:
+        scope = "global" if scope_flag == "global" else get_scope()
+        if scope in ide_table[var_name]["scope"]:
+            class_index = ide_table[var_name]["scope"].index(scope)
+            return ide_table[var_name]["class"][class_index]
+        raise_semantic_error(f"Variável {var_name} não foi declarada no escopo {scope}")
+        return None
+    else:
+        scope = get_scope()
+        if scope in ide_table[var_name]["scope"]:
+            class_index = ide_table[var_name]["scope"].index(scope)
+            return ide_table[var_name]["class"][class_index]
+        elif "global" in ide_table[var_name]["scope"]:
+            class_index = ide_table[var_name]["scope"].index("global")
+            return ide_table[var_name]["class"][class_index]
+        raise_semantic_error(f"Variável {var_name} não foi declarada no escopo {scope} ou global")
+        return None
 
 def get_type(var_name, type_flag):
     scope = "global" if type_flag == "global" else get_scope()
@@ -489,7 +500,7 @@ def get_type(var_name, type_flag):
         return ide_table[var_name]["type"][class_index]
     return "int" #TODO Remover valor padrão
 
-def check_const_assign(var_name, scope_flag="local"):
+def check_const_assign(var_name, scope_flag=None):
     if var_name in ide_table:
         if get_class(var_name, scope_flag) == "const":
             raise_semantic_error(f"Variável {var_name} é uma constante.\
@@ -830,21 +841,21 @@ def var_decl():
         stm_scope()
         return []
     elif token == "id":
-        var_type = get_token_name()
-        if not istype(var_type) and var_type not in ide_table:
-            raise_semantic_error(f"Tipo {var_type} não foi declarado")
+        ide = get_token_name()
         next_token()
-
-        list_var, list_dimensions = var_id()
-        add_ides(var_type, list_var, list_dimensions, "var")
-        return [(var_type, name, list_dimensions[i]) for i, name in enumerate(list_var)]
+        list_var, list_dimensions = var_id(ide)
+        add_ides(ide, list_var, list_dimensions, "var")
+        return [(ide, name, list_dimensions[i]) for i, name in enumerate(list_var)]
     else:
         raise_error(first_VarDecl, follow_VarDecl)
 
-def var_id():
+def var_id(ide=None):
     list_var = []
     list_dimensions = []
     if token in first_Var:
+        if ide is not None:
+            if not istype(ide):
+                raise_semantic_error(f"Tipo {ide} não foi declarado")
         var_name, dimension = var()
         append_const_list(list_var, list_dimensions, var_name, dimension)
         var_names, dimensions = var_list()
@@ -855,7 +866,7 @@ def var_id():
         else:
             raise_error(";", follow_VarId)
     elif token in first_StmId:
-        stm_id()  # TODO: ??
+        stm_id(ide)  # TODO: ??
         return [], []
     else:
         raise_error(first_VarId, follow_VarId)
@@ -955,7 +966,6 @@ def const_decl():
         if not istype(const_type):
             raise_semantic_error(f"Tipo {const_type} não foi declarado")
         next_token()
-
         expr_type, const_names, const_dimensions = const_id()
         const_type = compare_types(const_type, expr_type)
         add_ides(const_type, const_names, const_dimensions, "const")
@@ -1322,7 +1332,6 @@ def var_stm():
         check_const_assign(var_name, scope_flag)
         #TODO Comparar tipos, colocar tipos na hora de append ide
         compare_types(var_name, right_lexema, scope_flag)
-        print(var_name)
     elif token == "id":
         var_name = get_token_name()
         next_token()
