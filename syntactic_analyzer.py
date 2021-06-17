@@ -250,7 +250,7 @@ func_table = {}  # nome, tipos, parametros,
 type_buffer = []
 typedef_table = {}
 struct_table = {}
-func_list = []  # nome, tipos, parametros,
+func_list = [{"name": "global", "params": "", "return": ""}]  # nome, tipos, parametros,
 
 # - - - - - - - - - - - - - - - General - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -405,16 +405,40 @@ def append_struct(struct_name):
     # }
     struct_table["struct_" + struct_name] = None
 # - - - - - - - - - - - - - - -  Consts e Vars - - - - - - - - - - - - - - -
+def get_class(var_name):
+    class_index = ide_table[var_name]["scope"].index(get_current_scope())
+    return ide_table[var_name]["class"][class_index]
+#TODO Get Type
 
 def check_const_assign(var_name):
     if var_name in ide_table:
-        if ide_table[var_name]["class"] == "const":
+        if get_class(var_name) == "const":
             raise_semantic_error(f"Variável {var_name} é uma constante.\
                 \nNão é possível atribuir valores a uma constante")
 
 def check_variable_exists(var_name):
     if not var_name in ide_table:
         raise_semantic_error(f"Variável {var_name} não instanciada")
+
+
+def get_current_scope():
+    return func_list[-1]["name"]
+
+def append_ide(ide_name, ide_type, ide_class):
+    current_scope = get_current_scope()
+    if ide_name in ide_table:
+        occupied_scopes = ide_table[ide_name]["scope"]
+        if "global" in occupied_scopes:
+            raise_semantic_error(f"Já existe um identificador com o nome {ide_name} no escopo global")
+        elif current_scope in occupied_scopes:
+            raise_semantic_error(f"Já existe um identificador com o nome {ide_name} no escopo {current_scope}")
+        else:
+            ide_table[ide_name]["scope"].append(get_current_scope())
+            ide_table[ide_name]["class"].append(ide_class)
+            #TODO Colocar tipo na lista de variaveis
+    else:
+        ide_table[ide_name] = {"type": ide_type, "class": [ide_class], "scope": [current_scope]}
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -682,12 +706,13 @@ def var_decls():
         var_decl()
         var_decls()
 
+
 def var_decl():
     if token in first_Type:
-        var_type = type_func() #TODO Fazer verificacao atribuicao de tipos
+        var_type = type_func() 
         var_name = var()
-        var_list()
-        ide_table[var_name] = {"type": var_type, "class": "var"}
+        var_list() 
+        append_ide(var_name, var_type, "var")
         if token != ";":
             raise_error(";", follow_VarDecl)
         else:
@@ -743,7 +768,8 @@ def const_decl():
         if const_value is not None:
             if not is_type_correct(const_type, const_value["value"], const_value["general_type"]):
                 print("Erro: declaração de constante com tipo inválido.")
-            ide_table[const_name] = {"type": const_type, "class": "const"}
+            append_ide(const_name, const_type, "const")
+            #ide_table[const_name] = {"type": const_type, "class": ["const"]} #TODO colocar append
     elif token in first_Typedef:
         typedef()
     elif token in first_StmScope:
@@ -1093,21 +1119,16 @@ def func_normal_stm():
     else:
         raise_error(first_FuncNormalStm, follow_FuncNormalStm)
 
+# def check_scope_avaible(var_name, scope_indicator=None):
+
 def var_stm():
     if token in first_StmScope:
         stm_scope()
     elif token == "id":
         var_name = get_token_name()
-
-        # if not var_name in ide_table:
-        #     raise_semantic_error(f"Variável {var_name} não instanciada")
-
         next_token()
         right_lexema = stm_id(var_name)
         compare_types(var_name, right_lexema) #TODO Tá dando erro aqui quando vai comparar
-        
-        # elif not is_type_correct(ide_table[var_name]["type"], var_value["value"], var_value["general_type"]):
-        #     print("Erro: atribuição de variável com tipo errado")
     elif token in first_StmCmd:
         stm_cmd()
     else:
