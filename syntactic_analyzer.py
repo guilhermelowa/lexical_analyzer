@@ -252,7 +252,7 @@ struct_table = {}  #key: name,  value: [(type, name, dimension), ...]
 struct_list = []
 func_list = []  # nome, tipos, parametros,
 func_table = {}  # nome, tipos, parametros,
-global_scope = ""
+global_scope = "global"
 
 # - - - - - - - - - - - - - - - General - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -467,16 +467,38 @@ def append_struct(struct_name, var_list=None):
         struct_table[struct_name] = var_list
 
 # - - - - - - - - - - - - - - -  Consts e Vars - - - - - - - - - - - - - - -
+def get_class(var_name):
+    # TODO: Consertar tipo fixo
+    scope = get_scope()
+    if scope in ide_table[var_name]["scope"]:
+        class_index = ide_table[var_name]["scope"].index(get_scope())
+        return ide_table[var_name]["class"][class_index]
+    return "var"
+#TODO Get Type
 
 def check_const_assign(var_name):
     if var_name in ide_table:
-        if ide_table[var_name]["class"] == "const":
+        if get_class(var_name) == "const":
             raise_semantic_error(f"Variável {var_name} é uma constante.\
                 \nNão é possível atribuir valores a uma constante")
 
 def check_variable_exists(var_name):
     if not var_name in ide_table:
         raise_semantic_error(f"Variável {var_name} não instanciada")
+
+def append_ide(ide_name, ide_type, ide_class):
+    current_scope = get_scope()
+    if ide_name in ide_table:
+        occupied_scopes = ide_table[ide_name]["scope"]
+        if current_scope in occupied_scopes:
+            raise_semantic_error(f"Já existe um identificador com o nome {ide_name} no escopo {current_scope}")
+        else:
+            ide_table[ide_name]["scope"].append(current_scope)
+            ide_table[ide_name]["class"].append(ide_class)
+            #TODO Colocar tipo na lista de variaveis
+    else:
+        ide_table[ide_name] = {"type": ide_type, "class": [ide_class], "scope": [current_scope]}
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -769,6 +791,7 @@ def var_decls():
         var_decls_list += var_decls()
     return var_decls_list
 
+
 def var_decl():
     list_var = []
     list_dimensions = []
@@ -778,7 +801,7 @@ def var_decl():
         append_const_list(list_var, list_dimensions, var_name, dimension)
         var_names, dimensions = var_list()
         append_const_list(list_var, list_dimensions, var_names, dimensions)
-        add_ides(var_type, var_names, dimensions, "var")
+        add_ides(var_type, list_var, list_dimensions, "var")
         if token != ";":
             raise_error(";", follow_VarDecl)
         else:
@@ -957,7 +980,7 @@ def const_list():
         append_const_list(list_const, list_dimensions, const_name, dimension)
         const_type, const_names, dimensions = const_list()
         append_const_list(list_const, list_dimensions, const_names, dimensions)
-        return const_type, const_names, dimensions
+        return const_type, list_const, list_dimensions
 
     elif token == "=":
         next_token()
@@ -1276,21 +1299,16 @@ def func_normal_stm():
     else:
         raise_error(first_FuncNormalStm, follow_FuncNormalStm)
 
+# def check_scope_avaible(var_name, scope_indicator=None):
+
 def var_stm():
     if token in first_StmScope:
         stm_scope()
     elif token == "id":
         var_name = get_token_name()
-
-        # if not var_name in ide_table:
-        #     raise_semantic_error(f"Variável {var_name} não instanciada")
-
         next_token()
         right_lexema = stm_id(var_name)
         compare_types(var_name, right_lexema) #TODO Tá dando erro aqui quando vai comparar
-        
-        # elif not is_type_correct(ide_table[var_name]["type"], var_value["value"], var_value["general_type"]):
-        #     print("Erro: atribuição de variável com tipo errado")
     elif token in first_StmCmd:
         stm_cmd()
     else:
