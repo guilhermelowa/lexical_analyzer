@@ -1,4 +1,5 @@
 import os
+import lexical_analyzer
 
 
 # First & Follow
@@ -253,6 +254,7 @@ struct_list = []
 func_list = []  # nome, tipos, parametros,
 func_table = {}  # nome, tipos, parametros,
 global_scope = "global"
+semantic_errors = 0
 
 # - - - - - - - - - - - - - - - General - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -261,6 +263,9 @@ def get_token_name():
     return tokens[tokens_position][2]
 
 def raise_semantic_error(msg):
+    global semantic_errors
+    semantic_errors += 1
+
     full_msg = f"Erro linha {tokens[tokens_position][0]}\n"
     if msg[-1] != "\n":
         msg += "\n"
@@ -345,6 +350,18 @@ def append_func(return_type="None", name=None):
     })
 
 def append_func_params(params):
+    name = func_list[-1]["name"]
+    return_type = func_list[-1]["return"]
+    if name not in func_table.keys():
+        func_table[name] = {"params": [params],
+                            "return": [return_type]}
+    else:
+        if params in func_table[name]["params"]:
+            raise_semantic_error(f"Função {name} com parâmetros {params} já foi declarada")
+            func_list.pop()
+            return
+        func_table[name]["params"].append(params)
+        func_table[name]["return"].append(return_type)
     func_list[-1]["params"] = params
 
 
@@ -365,13 +382,10 @@ def get_arg_type(arg, type_flag="local"):
             return "boolean"
     if arg in ide_table.keys():
         return get_type(arg, type_flag)
-    # TODO: Adicionar retorno da função, caso arg seja uma função.
-    # Arg precisa conter, além do nome da função, os argumentos, por causa da sobrecarga.
-    # Pode usar check_func_params tb
-    # if arg in func_table.keys():
-
+    if arg in func_table.keys():
+        return func_table[arg]["return"][0]
     raise_semantic_error(f'Variável {arg}\
-        usada como parâmetro não foi declarada') #TODO Talvez seja melhor verificar esse erro fora, ele ta aparecendo em funcao n declarada
+ usada como parâmetro não foi declarada') 
     return None
 
 def get_args_types(func_args):
@@ -443,15 +457,6 @@ def test_tables():
     test_struct_table()
     test_ide_table()
 
-def transform_func_list():
-    for func in func_list:
-        name = func["name"]
-        if name not in func_table.keys():
-            func_table[name] = {"params": [func["params"]],
-                                "return": [func["return"]]}
-        else:
-            func_table[name]["params"].append(func["params"])
-            func_table[name]["return"].append(func["return"])
 
 # - - - - - - - - - - - - - - -  Structs - - - - - - - - - - - - - - -
 
@@ -572,16 +577,20 @@ def raise_error(expected_token, sync_list=None):
     if sync_list is not None:
         recover_from_error(sync_list)
 
-def success():
-    global fout, errors_count
-    if errors_count == 0:
-        msg = 'Análise Sintática concluída com sucesso!\n'
+def success_msg(file_, errors, analysis_type):
+    if errors == 0:
+        msg = f'Análise {analysis_type} concluída com sucesso!\n'
         print(msg)
-        fout.write(msg)
+        file_.write(msg)
     else:
-        msg = f'Análise Sintática concluída com {errors_count} erros\n'
+        msg = f'Análise {analysis_type} concluída com {errors} erros\n'
         print(msg)
-        fout.write(msg)
+        file_.write(msg)
+
+def success():
+    global fout, errors_count, semantic_errors, semantic_output_file
+    success_msg(fout, errors_count, "Sintática")
+    success_msg(semantic_output_file, semantic_errors, "Semântica")
 
 def sync_function(sync_list, normal_flow=True):
     global tokens, tokens_position
@@ -662,7 +671,6 @@ def structs():
 def start():
     if token == "start":
         append_func(name="start")
-        transform_func_list()
         next_token()
         if token != "(":
             raise_error("(")
@@ -770,9 +778,9 @@ def type_func():
     elif token == "struct":
         next_token()
         if token == "id":
-            token_type = tokens[tokens_position][2]
+            token_type = get_token_name()
             next_token()
-            return "struct_" + token_type
+            return token_type
     else:
         raise_error(first_Type, follow_Type)
 
@@ -814,7 +822,7 @@ def var_decl():
             raise_error(";", follow_VarDecl)
         else:
             next_token()
-            return [(var_type, name, list_var, list_dimensions[i]) for i, name in enumerate(list_var)]
+            return [(var_type, name, list_dimensions[i]) for i, name in enumerate(list_var)]
     elif token in first_Typedef:
         typedef()
         return []
@@ -829,7 +837,7 @@ def var_decl():
 
         list_var, list_dimensions = var_id()
         add_ides(var_type, list_var, list_dimensions, "var")
-        return [(var_type, name, list_var, list_dimensions[i]) for i, name in enumerate(list_var)]
+        return [(var_type, name, list_dimensions[i]) for i, name in enumerate(list_var)]
     else:
         raise_error(first_VarDecl, follow_VarDecl)
 
@@ -893,9 +901,8 @@ def add_ide(type_, name, dimension, class_):
     global ide_table
     scope = get_scope()
     if iside(name):
-        # TODO: Check if same scope already exists
         if scope in ide_table[name]["scope"]:
-            scope_name = scope if scope == "global" else scope["name"]
+            scope_name = scope if scope == "global" else scope["name"]  # get function or struct name
             raise_semantic_error(f"Já existe um identificador com o nome {name} no escopo {scope_name}")
         else:
             ide_table[name]["type"].append(type_)
@@ -997,10 +1004,9 @@ def const_list():
     elif token == "=":
         next_token()
         token_value = decl_atribute()
-        token_type = get_arg_type(token_value)
         if token == ";":
             next_token()
-            return token_type, [], []
+            return token_value, [], []
         else:
             raise_error(";", follow_ConstList)
     else:
@@ -1180,22 +1186,20 @@ def param_type():
 
 def params():
     func_params = []
-    extra_params = []
     if token in first_Param:
         func_params.append(param())
-        extra_params = params_list()
-        func_params += extra_params
+        func_params += params_list()
         return func_params
 
 def param():
-    dimensions = ""
-    func_single_param = ""
     if token in first_ParamType:
-        func_single_param = param_type()
+        param_type_ = param_type()
         if token == "id":
+            param_name = get_token_name()
             next_token()
             dimensions = param_arrays()
-            return func_single_param + dimensions
+            add_ide(param_type_, param_name, dimensions, "var")
+            return (param_type_, dimensions)
         else:
             raise_error("IDENTIFICADOR", follow_Param)
     else:
@@ -1220,10 +1224,6 @@ def param_arrays():
         dimensions = 1
         next_token()
         dimensions += param_mult_arrays()
-    if dimensions == 0:
-        dimensions = ""
-    else:
-        dimensions = str(dimensions) + "d"
     return dimensions
 
 def param_mult_arrays():
