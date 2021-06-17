@@ -882,14 +882,14 @@ def iside(ide):
     return ide in ide_table.keys()
 
 def add_ide(type_, name, dimension, class_):
+    global ide_table
     scope = get_scope()
     if iside(name):
         # TODO: Check if same scope already exists
-        ide_table[name] = {"type": ide_table[name]["type"].append(type_),
-                        "dimension": ide_table[name]["dimension"].append(dimension),
-                        "scope": ide_table[name]["scope"].append(scope),
-                        "class": ide_table[name]["class"].append(class_)
-                        }
+        ide_table[name]["type"].append(type_)
+        ide_table[name]["dimension"].append(dimension)
+        ide_table[name]["scope"].append(scope)
+        ide_table[name]["class"].append(class_)
     else:
         ide_table[name] = {"type": [type_],
                         "dimension": [dimension],
@@ -940,7 +940,7 @@ def const_decl():
         expr_type, const_names, const_dimensions = const_id()
         const_type = compare_types(const_type, expr_type)
         add_ides(const_type, const_names, const_dimensions, "const")
-        return [(const_type, name, dimensions[i]) for i, name in enumerate(const_names)]
+        return [(const_type, name, const_dimensions[i]) for i, name in enumerate(const_names)]
     else:
         raise_error(first_ConstDecl, follow_ConstDecl)
 
