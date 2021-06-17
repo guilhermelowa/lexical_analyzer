@@ -898,7 +898,7 @@ def add_ide(type_, name, dimension, class_):
     if iside(name):
         # TODO: Check if same scope already exists
         if scope in ide_table[name]["scope"]:
-            scope_name = scope["name"]
+            scope_name = scope if scope == "global" else scope["name"]
             raise_semantic_error(f"Já existe um identificador com o nome {name} no escopo {scope_name}")
         else:
             ide_table[name]["type"].append(type_)
