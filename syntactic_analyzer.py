@@ -302,7 +302,7 @@ def get_num_type(num):
     else:
         return "int"
 
-def compare_types(arg1, arg2, type_flag="None"):
+def compare_types(arg1, arg2, type_flag=None):
     type_arg1 = get_arg_type(arg1, type_flag)
     type_arg2 = get_arg_type(arg2)
 
@@ -516,12 +516,25 @@ def get_class(var_name, scope_flag=None):
         raise_semantic_error(f"Variável {var_name} não foi declarada no escopo {scope_name} ou global")
         return None
 
-def get_type(var_name, type_flag):
-    scope = "global" if type_flag == "global" else get_scope()
-    if scope in ide_table[var_name]["scope"]:
-        class_index = ide_table[var_name]["scope"].index(scope)
-        return ide_table[var_name]["type"][class_index]
-    return "int" #TODO Remover valor padrão
+def get_type(var_name, scope_flag=None):
+    if scope_flag is not None:
+        scope = "global" if scope_flag == "global" else get_scope()
+        if scope in ide_table[var_name]["scope"]:
+            type_index = ide_table[var_name]["scope"].index(scope)
+            return ide_table[var_name]["type"][type_index]
+        scope_name = scope if scope == "global" else scope["name"]
+        raise_semantic_error(f"Variável {var_name} não foi declarada no escopo {scope_name}")
+    else:
+        scope = get_scope()
+        if scope in ide_table[var_name]["scope"]:
+            type_index = ide_table[var_name]["scope"].index(scope)
+            return ide_table[var_name]["type"][type_index]
+        elif "global" in ide_table[var_name]["scope"]:
+            type_index = ide_table[var_name]["scope"].index("global")
+            return ide_table[var_name]["type"][type_index]
+        scope_name = scope if scope == "global" else scope["name"]
+        raise_semantic_error(f"Variável {var_name} não foi declarada no escopo {scope_name}")
+
 
 def check_const_assign(var_name, scope_flag=None):
     if var_name in ide_table:
@@ -1012,7 +1025,7 @@ def const_id():
         else:
             raise_error(";", follow_ConstId)
     elif token in first_StmId:
-        stm_id()  #TODO ??
+        stm_id()  
     else:
         raise_error(first_ConstId, follow_ConstId)
 
@@ -1355,13 +1368,12 @@ def var_stm():
     if token in first_StmScope:
         scope_flag, var_name, right_lexema = stm_scope()
         check_const_assign(var_name, scope_flag)
-        #TODO Comparar tipos, colocar tipos na hora de append ide
         compare_types(var_name, right_lexema, scope_flag)
     elif token == "id":
         var_name = get_token_name()
         next_token()
         right_lexema = stm_id(var_name)
-        compare_types(var_name, right_lexema) #TODO Tá dando erro aqui quando vai comparar
+        compare_types(var_name, right_lexema)
     elif token in first_StmCmd:
         stm_cmd()
     else:
@@ -1373,7 +1385,7 @@ def stm_id(lexema=None):
         check_const_assign(lexema)
         return assign()
     elif token in first_Array:
-        check_variable_exists(lexema) #TODO Colocar constantes (verificação de atribuição)
+        check_variable_exists(lexema) 
         check_const_assign(lexema)
         array()
         arrays()
