@@ -1203,7 +1203,7 @@ def params():
     if token in first_Param:
         func_params.append(param())
         func_params += params_list()
-        return func_params
+    return func_params
 
 def param():
     if token in first_ParamType:
