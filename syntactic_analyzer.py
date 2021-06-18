@@ -413,7 +413,7 @@ def get_args_types(func_args):
     args_type_list = []
     for arg in func_args:
         full_arg = (get_arg_type(arg), get_arg_dimension(arg))
-        args_type_list.append(get_arg_type(arg))
+        args_type_list.append(full_arg)
     return args_type_list
 
 def isfunc(func_id):
@@ -686,7 +686,20 @@ def sync_function(sync_list, normal_flow=True):
 
 
 def program():
+    global ide_table, type_buffer, typedef_table, struct_table, struct_list, func_list
+    global func_table, global_scope, semantic_errors
+    ide_table = {}   # type, class, scope, dimensions
+    type_buffer = []
+    typedef_table = {}
+    struct_table = {}  #key: name,  value: [(type, name, dimension), ...]
+    struct_list = []
+    func_list = []  # nome, tipos, parametros,
+    func_table = {}  # nome, tipos, parametros,
+    global_scope = "global"
+    semantic_errors = 0
+
     if token in first_Structs:
+        global_scope = "struct"
         structs()
         const_block()
         var_block()
@@ -726,7 +739,7 @@ def start():
             raise_error(")")
         next_token()
         func_block()
-        test_tables()
+        # test_tables()
     else:
         raise_error("start", follow_StartBlock)
 
