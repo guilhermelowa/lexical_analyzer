@@ -268,7 +268,7 @@ def raise_semantic_error(msg):
 
     full_msg = f"Erro linha {tokens[tokens_position][0]}\n"
     if msg[-1] != "\n":
-        msg += "\n"
+        msg += "\n\n"
     
     full_msg += msg
     print(full_msg) 
@@ -480,7 +480,8 @@ def get_class(var_name, scope_flag=None):
         if scope in ide_table[var_name]["scope"]:
             class_index = ide_table[var_name]["scope"].index(scope)
             return ide_table[var_name]["class"][class_index]
-        raise_semantic_error(f"Variável {var_name} não foi declarada no escopo {scope}")
+        scope_name = scope if scope == "global" else scope["name"]
+        raise_semantic_error(f"Variável {var_name} não foi declarada no escopo {scope_name}")
         return None
     else:
         scope = get_scope()
@@ -490,7 +491,8 @@ def get_class(var_name, scope_flag=None):
         elif "global" in ide_table[var_name]["scope"]:
             class_index = ide_table[var_name]["scope"].index("global")
             return ide_table[var_name]["class"][class_index]
-        raise_semantic_error(f"Variável {var_name} não foi declarada no escopo {scope} ou global")
+        scope_name = scope if scope == "global" else scope["name"]
+        raise_semantic_error(f"Variável {var_name} não foi declarada no escopo {scope_name} ou global")
         return None
 
 def get_type(var_name, type_flag):
