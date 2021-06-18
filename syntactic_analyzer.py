@@ -1746,10 +1746,10 @@ def read_lexical_output(input_dir):
 for filename in os.listdir(input_dir):
     if filename.startswith('saida'):
         read_lexical_output(input_dir)
-    file_num = filename.split('.')[0][5:]
-    with open(f'{output_dir}saida{file_num}.txt', 'w') as fout:
-        with open(f'{semantic_output_dir}saida{file_num}.txt', 'w') as semantic_output_file:
-            program()
+        file_num = filename.split('.')[0][5:]
+        with open(f'{output_dir}saida{file_num}.txt', 'w') as fout:
+            with open(f'{semantic_output_dir}saida{file_num}.txt', 'w') as semantic_output_file:
+                program()
     files_read += 1
 
 print(f"Read {files_read} files\
