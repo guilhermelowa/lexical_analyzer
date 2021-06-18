@@ -1004,7 +1004,7 @@ def const_id():
         else:
             raise_error(";", follow_ConstId)
     elif token in first_StmId:
-        stm_id()  #TODO ??
+        stm_id()  
     else:
         raise_error(first_ConstId, follow_ConstId)
 
@@ -1347,13 +1347,12 @@ def var_stm():
     if token in first_StmScope:
         scope_flag, var_name, right_lexema = stm_scope()
         check_const_assign(var_name, scope_flag)
-        #TODO Comparar tipos, colocar tipos na hora de append ide
         compare_types(var_name, right_lexema, scope_flag)
     elif token == "id":
         var_name = get_token_name()
         next_token()
         right_lexema = stm_id(var_name)
-        compare_types(var_name, right_lexema) #TODO Tá dando erro aqui quando vai comparar
+        compare_types(var_name, right_lexema)
     elif token in first_StmCmd:
         stm_cmd()
     else:
@@ -1365,7 +1364,7 @@ def stm_id(lexema=None):
         check_const_assign(lexema)
         return assign()
     elif token in first_Array:
-        check_variable_exists(lexema) #TODO Colocar constantes (verificação de atribuição)
+        check_variable_exists(lexema) 
         check_const_assign(lexema)
         array()
         arrays()
