@@ -892,6 +892,8 @@ def var_list():
     return list_var, list_dimensions
     
 def unroll_const_decls_list(const_decls_list):
+    if const_decls_list is None:
+        return []
     var_list = []
     for const_decl in const_decls_list:
         for var in const_decl:
