@@ -302,7 +302,7 @@ def get_num_type(num):
     else:
         return "int"
 
-def compare_types(arg1, arg2, type_flag="None"):
+def compare_types(arg1, arg2, type_flag=None):
     type_arg1 = get_arg_type(arg1, type_flag)
     type_arg2 = get_arg_type(arg2)
 
@@ -366,7 +366,7 @@ def append_func_params(params):
 
 
 
-def get_arg_type(arg, type_flag="local"):
+def get_arg_type(arg, type_flag=None):
     if arg is None:
         return None
     available_types = get_available_types()
@@ -495,12 +495,25 @@ def get_class(var_name, scope_flag=None):
         raise_semantic_error(f"Variável {var_name} não foi declarada no escopo {scope_name} ou global")
         return None
 
-def get_type(var_name, type_flag):
-    scope = "global" if type_flag == "global" else get_scope()
-    if scope in ide_table[var_name]["scope"]:
-        class_index = ide_table[var_name]["scope"].index(scope)
-        return ide_table[var_name]["type"][class_index]
-    return "int" #TODO Remover valor padrão
+def get_type(var_name, scope_flag=None):
+    if scope_flag is not None:
+        scope = "global" if scope_flag == "global" else get_scope()
+        if scope in ide_table[var_name]["scope"]:
+            type_index = ide_table[var_name]["scope"].index(scope)
+            return ide_table[var_name]["type"][type_index]
+        scope_name = scope if scope == "global" else scope["name"]
+        raise_semantic_error(f"Variável {var_name} não foi declarada no escopo {scope_name}")
+    else:
+        scope = get_scope()
+        if scope in ide_table[var_name]["scope"]:
+            type_index = ide_table[var_name]["scope"].index(scope)
+            return ide_table[var_name]["type"][type_index]
+        elif "global" in ide_table[var_name]["scope"]:
+            type_index = ide_table[var_name]["scope"].index("global")
+            return ide_table[var_name]["type"][type_index]
+        scope_name = scope if scope == "global" else scope["name"]
+        raise_semantic_error(f"Variável {var_name} não foi declarada no escopo {scope_name}")
+
 
 def check_const_assign(var_name, scope_flag=None):
     if var_name in ide_table:
