@@ -366,7 +366,7 @@ def append_func_params(params):
 
 
 
-def get_arg_type(arg, type_flag="local"):
+def get_arg_type(arg, type_flag=None):
     if arg is None:
         return None
     available_types = get_available_types()
@@ -388,10 +388,31 @@ def get_arg_type(arg, type_flag="local"):
  usada como parâmetro não foi declarada') 
     return None
 
+def get_arg_dimension(arg, type_flag=None):
+    scope = "global" if type_flag == "global" else get_scope()
+    if arg is None:
+        return 0
+    if isinstance(arg, dict):
+        return 0
+    if arg in ide_table.keys():
+        if scope in ide_table[arg]["scope"]:
+            idx = ide_table[arg]["scope"].index(scope)
+            return ide_table[arg]["dimension"][idx]
+        elif "global" in ide_table[arg]["scope"]:
+            idx = ide_table[arg]["scope"].index("global")
+            return ide_table[arg]["dimension"][idx]
+        else:
+            raise_semantic_error(f'Argumento {arg} não existe no escopo {scope} ou global')
+    if arg in func_table.keys():
+        return 0  #TODO: Pode retornar matriz?
+    raise_semantic_error(f'Variável {arg}\
+ usada como parâmetro não foi declarada') 
+    return None
+
 def get_args_types(func_args):
     args_type_list = []
-    available_types = get_available_types()
     for arg in func_args:
+        full_arg = (get_arg_type(arg), get_arg_dimension(arg))
         args_type_list.append(get_arg_type(arg))
     return args_type_list
 
