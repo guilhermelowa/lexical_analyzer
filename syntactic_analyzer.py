@@ -268,7 +268,7 @@ def raise_semantic_error(msg):
 
     full_msg = f"Erro linha {tokens[tokens_position][0]}\n"
     if msg[-1] != "\n":
-        msg += "\n"
+        msg += "\n\n"
     
     full_msg += msg
     print(full_msg) 
